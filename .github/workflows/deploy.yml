@@ -38,11 +38,23 @@ jobs:
       - name: Build backend
         working-directory: marketing-os-server
         run: npm run build
+        env:
+          CI: true
 
       - name: Lint backend (optional)
         working-directory: marketing-os-server
         run: npm run lint
         continue-on-error: true
+
+      - name: Verify backend build
+        run: |
+          if [ -f marketing-os-server/dist/server.js ]; then
+            echo "✓ Backend build successful"
+          else
+            echo "✗ Backend build failed - dist/server.js not found"
+            ls -la marketing-os-server/dist/ || echo "dist directory doesn't exist"
+            exit 1
+          fi
 
       # Frontend Build
       - name: Install frontend dependencies
@@ -52,12 +64,20 @@ jobs:
       - name: Build frontend
         working-directory: marketing-os-ui
         run: npm run build
+        env:
+          CI: true
 
-      - name: Verify builds were successful
+      - name: Verify frontend build
         run: |
-          test -f marketing-os-server/dist/server.js || exit 1
-          test -f marketing-os-ui/dist/index.html || exit 1
-          echo "✓ Both builds verified successfully"
+          if [ -f marketing-os-ui/dist/index.html ]; then
+            echo "✓ Frontend build successful"
+          else
+            echo "✗ Frontend build failed - dist/index.html not found"
+            ls -la marketing-os-ui/dist/ || echo "dist directory doesn't exist"
+            exit 1
+          fi
+
+
 
   deploy:
     name: Deploy to EC2
