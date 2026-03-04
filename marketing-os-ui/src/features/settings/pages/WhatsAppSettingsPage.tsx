@@ -3,8 +3,8 @@
 // NO logic here — hooks provide data, components render UI.
 
 import React, { useState } from 'react';
-import { Typography, Spin, Alert, Space, Breadcrumb } from 'antd';
-import { WhatsAppOutlined, HomeOutlined, SettingOutlined } from '@ant-design/icons';
+import { Typography, Spin, Alert, Space, Breadcrumb, Tabs } from 'antd';
+import { WhatsAppOutlined, HomeOutlined, SettingOutlined, LinkOutlined, ShopOutlined, AppstoreOutlined, BellOutlined, RocketOutlined, UserOutlined } from '@ant-design/icons';
 import { useWhatsAppConnection } from '../hooks';
 import {
   ConnectionMethodSelector,
@@ -13,6 +13,13 @@ import {
   ConnectionStatus,
 } from '../components';
 import type { WhatsAppConnectionMethod } from '../types';
+
+// Import Meta UI Components
+import BusinessOverview from '../../whatsapp/components/meta/BusinessOverview';
+import ConnectedAssets from '../../whatsapp/components/meta/ConnectedAssets';
+import WebhookLogs from '../../whatsapp/components/meta/WebhookLogs';
+import MetaEmbeddedSignup from '../../whatsapp/components/meta/EmbeddedSignup';
+import UserProfile from '../../whatsapp/components/meta/UserProfile';
 
 const { Title, Text } = Typography;
 
@@ -86,53 +93,94 @@ const WhatsAppSettingsPage: React.FC = () => {
         </Text>
       </Space>
 
-      {/* If already connected, show status */}
-      {isConnected && connection ? (
-        <ConnectionStatus
-          connection={connection}
-          onTest={testConnection}
-          isTesting={isTesting}
-          onDisconnect={disconnect}
-          isDisconnecting={isDisconnecting}
-          onRegenerateToken={regenerateVerifyToken}
-          isRegenerating={isRegenerating}
-        />
-      ) : (
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          {/* Method selection */}
-          <ConnectionMethodSelector value={method} onChange={setMethod} />
+      {/* Tabbed interface for WhatsApp Settings & Meta Hub */}
+      <Tabs
+        defaultActiveKey="connection"
+        size="large"
+        items={[
+          {
+            key: 'connection',
+            label: (
+              <span><LinkOutlined /> Connection</span>
+            ),
+            children: (
+              <div style={{ marginTop: 16 }}>
+                {isConnected && connection ? (
+                  <ConnectionStatus
+                    connection={connection}
+                    onTest={testConnection}
+                    isTesting={isTesting}
+                    onDisconnect={disconnect}
+                    isDisconnecting={isDisconnecting}
+                    onRegenerateToken={regenerateVerifyToken}
+                    isRegenerating={isRegenerating}
+                  />
+                ) : (
+                  <Space direction="vertical" size={24} style={{ width: '100%' }}>
+                    {/* Method selection */}
+                    <ConnectionMethodSelector value={method} onChange={setMethod} />
 
-          {/* Show form based on selected method */}
-          {method === 'manual' ? (
-            <ManualConfigForm
-              initialValues={
-                connection
-                  ? {
-                      whatsappBusinessAccountId:
-                        connection.whatsappBusinessAccountId || '',
-                      phoneNumberId: connection.phoneNumberId || '',
-                      displayPhoneNumber: connection.displayPhoneNumber || '',
-                      businessName: connection.businessName || '',
-                      webhookUrl: connection.webhookUrl || '',
-                      verifyToken: connection.verifyToken || '',
-                    }
-                  : null
-              }
-              onSubmit={saveManual}
-              isSubmitting={isSavingManual}
-              isEditMode={!!connection}
-            />
-          ) : (
-            <EmbeddedSignup
-              embeddedConfig={embeddedConfig}
-              onFetchConfig={() => fetchEmbeddedConfig()}
-              isFetchingConfig={isEmbeddedConfigLoading}
-              onComplete={completeEmbedded}
-              isCompleting={isCompletingEmbedded}
-            />
-          )}
-        </Space>
-      )}
+                    {/* Show form based on selected method */}
+                    {method === 'manual' ? (
+                      <ManualConfigForm
+                        initialValues={
+                          connection
+                            ? {
+                              whatsappBusinessAccountId:
+                                connection.whatsappBusinessAccountId || '',
+                              phoneNumberId: connection.phoneNumberId || '',
+                              displayPhoneNumber: connection.displayPhoneNumber || '',
+                              businessName: connection.businessName || '',
+                              webhookUrl: connection.webhookUrl || '',
+                              verifyToken: connection.verifyToken || '',
+                            }
+                            : null
+                        }
+                        onSubmit={saveManual}
+                        isSubmitting={isSavingManual}
+                        isEditMode={!!connection}
+                      />
+                    ) : (
+                      <EmbeddedSignup
+                        embeddedConfig={embeddedConfig}
+                        onFetchConfig={() => fetchEmbeddedConfig()}
+                        isFetchingConfig={isEmbeddedConfigLoading}
+                        onComplete={completeEmbedded}
+                        isCompleting={isCompletingEmbedded}
+                      />
+                    )}
+                  </Space>
+                )}
+              </div>
+            )
+          },
+          {
+            key: 'overview',
+            label: <span><ShopOutlined /> Business Overview</span>,
+            children: <div style={{ marginTop: 16 }}><BusinessOverview /></div>
+          },
+          {
+            key: 'assets',
+            label: <span><AppstoreOutlined /> Connected Assets</span>,
+            children: <div style={{ marginTop: 16 }}><ConnectedAssets /></div>
+          },
+          {
+            key: 'webhooks',
+            label: <span><BellOutlined /> Webhook Logs</span>,
+            children: <div style={{ marginTop: 16 }}><WebhookLogs /></div>
+          },
+          {
+            key: 'signup',
+            label: <span><RocketOutlined /> Embedded Signup</span>,
+            children: <div style={{ marginTop: 16 }}><MetaEmbeddedSignup /></div>
+          },
+          {
+            key: 'profile',
+            label: <span><UserOutlined /> User Profile</span>,
+            children: <div style={{ marginTop: 16 }}><UserProfile /></div>
+          }
+        ]}
+      />
     </div>
   );
 };

@@ -6,3 +6,4 @@ export { createTimelineService } from './TimelineService.js';
 export { createWorkflowOrchestrator } from './WorkflowOrchestrator.js';
 export { createOperationsCommandHandler } from './OperationsCommandHandler.js';
 export { createNotificationService } from './NotificationService.js';
+export { createMetaService } from './MetaService.js';

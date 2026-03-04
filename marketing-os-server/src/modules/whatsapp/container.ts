@@ -34,6 +34,7 @@ import {
 } from './services/index.js';
 import { createWhatsAppAdapter } from './WhatsAppAdapter.js';
 import { createMetaTemplateSyncService } from './services/MetaTemplateSyncService.js';
+import { createMetaService } from './services/MetaService.js';
 
 // Presentation controllers
 import {
@@ -46,10 +47,31 @@ import {
   createSettingsController,
   createEmbeddedSignupController,
   createBroadcastController,
+  createMetaController,
 } from './controllers/index.js';
 
 import { createWhatsAppAnalyticsService } from './services/WhatsAppAnalyticsService.js';
 import { createAutomationEngine } from './services/AutomationEngine.js';
+import { createAIEcommerceAssistant } from './services/AIEcommerceAssistant.js';
+
+import * as productService from '../products/product.service.js';
+import * as categoryService from '../categories/category.service.js';
+
+// Convert existing Mongo service to the standard interface expected by AI Assistant
+const productServicePlaceholder = {
+  getAllProducts: async (tenantId: string, query: any) => {
+    return productService.getAllProducts(tenantId, query);
+  },
+  getProductById: async (id: string, tenantId: string) => {
+    return productService.getProductById(id, tenantId);
+  }
+};
+
+const categoryServicePlaceholder = {
+  getAllCategories: async (tenantId: string) => {
+    return categoryService.getActiveCategories(tenantId);
+  }
+};
 
 /**
  * WhatsApp container - holds all WhatsApp-related dependencies
@@ -89,10 +111,12 @@ export interface WhatsAppContainer {
   settingsController: ReturnType<typeof createSettingsController>;
   embeddedSignupController: ReturnType<typeof createEmbeddedSignupController>;
   broadcastController: ReturnType<typeof createBroadcastController>;
+  metaController: ReturnType<typeof createMetaController>;
   flowEngine: any;
   flowRepository: any;
   instagramWebhookController: any;
   unifiedConversationController: any;
+  aiEcommerceAssistant: any;
 }
 
 /**
@@ -142,6 +166,8 @@ export function createWhatsAppContainer(
     tenantProviderFactory,
     config.whatsapp.meta?.apiVersion || 'v21.0'
   );
+
+  const metaService = createMetaService();
 
   // ============================================
   // CHANNEL ADAPTERS
@@ -240,6 +266,15 @@ export function createWhatsAppContainer(
     getSettings: async (tenantId: string) => null,
   };
 
+  // ============================================
+  // AI ASSISTANT
+  // ============================================
+  const aiEcommerceAssistant = createAIEcommerceAssistant(
+    messageService,
+    productServicePlaceholder,
+    categoryServicePlaceholder
+  );
+
   const webhookController = createWebhookController(
     provider,
     conversationService,
@@ -247,7 +282,8 @@ export function createWhatsAppContainer(
     workflowOrchestrator,
     flowEngine,
     tenantRepository,
-    auditLogRepo
+    auditLogRepo,
+    aiEcommerceAssistant
   );
 
   const conversationController = createConversationController(
@@ -274,7 +310,10 @@ export function createWhatsAppContainer(
     conversationService
   );
 
-  const automationController = createAutomationController(automationEngine);
+  const automationController = createAutomationController(
+    automationEngine,
+    aiEcommerceAssistant
+  );
 
   // ============================================
   // ISOLATED FEATURE CONTROLLERS
@@ -284,6 +323,7 @@ export function createWhatsAppContainer(
   const embeddedSignupController = createEmbeddedSignupController(waConfigRepo, pool);
   const broadcastRepo = createBroadcastRepository(pool);
   const broadcastController = createBroadcastController(messageService, optInRepo, broadcastRepo);
+  const metaController = createMetaController(metaService);
 
   // Instagram & Omnichannel controllers (stubs until modules exist)
   const instagramWebhookController: any = {
@@ -330,12 +370,16 @@ export function createWhatsAppContainer(
     settingsController,
     embeddedSignupController,
     broadcastController,
+    metaController,
     instagramWebhookController,
     unifiedConversationController,
 
     // New Flow Automation
     flowRepository,
     flowEngine,
+
+    // AI eCommerce
+    aiEcommerceAssistant
   };
 }
 

@@ -2,9 +2,8 @@
 // All logic lives in hooks/useAutomation.ts
 
 import React from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, Card, Typography, Tag, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined, AppstoreOutlined } from '@ant-design/icons';
-import FlowEditor from './flow/FlowEditor';
+import { Table, Button, Modal, Form, Input, Select, Space, Card, Typography, Tag, Switch, Alert, Result } from 'antd';
+import { EditOutlined, DeleteOutlined, ThunderboltOutlined, RobotOutlined } from '@ant-design/icons';
 import { useAutomation } from '../hooks/useAutomation';
 
 const { Title, Text } = Typography;
@@ -13,13 +12,11 @@ const { Option } = Select;
 const WhatsAppAutomation: React.FC = () => {
     const {
         form,
-        isFlowEditorVisible, isModalVisible, setIsModalVisible,
-        editingRule, selectedFlowId, flowEditorRef,
-        rules, isRulesLoading, flows, isFlowsLoading,
+        isModalVisible, setIsModalVisible,
+        editingRule,
+        rules, isRulesLoading,
         isRuleSaving,
         handleEditRule, handleDeleteRule, handleSaveRule,
-        handleEditFlow, handleCreateFlow, handleDeleteFlow,
-        handleBackFromEditor, handleSaveFlow,
     } = useAutomation();
 
     /* ── Table column definitions (pure presentation config) ── */
@@ -38,54 +35,36 @@ const WhatsAppAutomation: React.FC = () => {
         },
     ];
 
-    const flowColumns = [
-        { title: 'Name', dataIndex: 'name', key: 'name', render: (text: string) => <Text strong>{text}</Text> },
-        { title: 'Trigger', dataIndex: ['trigger', 'type'], key: 'trigger', render: (text: string) => <Tag color="blue">{text}</Tag> },
-        { title: 'Status', dataIndex: 'isActive', key: 'isActive', render: (isActive: boolean) => <Tag color={isActive ? 'success' : 'default'}>{isActive ? 'ACTIVE' : 'INACTIVE'}</Tag> },
-        {
-            title: 'Actions', key: 'actions', render: (_: any, record: any) => (
-                <Space>
-                    <Button icon={<EditOutlined />} size="small" onClick={() => handleEditFlow(record._id)} />
-                    <Button icon={<DeleteOutlined />} size="small" danger onClick={() => handleDeleteFlow(record._id)} />
-                </Space>
-            ),
-        },
-    ];
-
-    /* ── Flow editor full-screen view ── */
-    if (isFlowEditorVisible) {
-        return (
-            <div style={{ padding: '0px', height: 'calc(100vh - 64px)', background: '#fff' }}>
-                <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Space>
-                        <Button onClick={handleBackFromEditor}>Back</Button>
-                        <Title level={4} style={{ margin: 0 }}>{selectedFlowId ? 'Edit Flow' : 'New Automation Flow'}</Title>
-                    </Space>
-                    <Button type="primary" onClick={handleSaveFlow}>Save Flow</Button>
-                </div>
-                <div style={{ height: 'calc(100% - 65px)' }}>
-                    <FlowEditor ref={flowEditorRef} flowId={selectedFlowId} />
-                </div>
-            </div>
-        );
-    }
-
     /* ── Main view ── */
     return (
         <div style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div>
-                    <Title level={4}><ThunderboltOutlined /> Automation</Title>
-                    <Text type="secondary">Manage your automation flows and rules</Text>
+                    <Title level={4}><ThunderboltOutlined /> WhatsApp Automation</Title>
+                    <Text type="secondary">Manage your AI Ecommerce Assistant and fallback rules</Text>
                 </div>
-                <Space>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateFlow}>New Flow</Button>
-                </Space>
             </div>
 
-            <Card title="Automation Flows" extra={<Button icon={<AppstoreOutlined />} onClick={handleCreateFlow}>Visual Builder</Button>}>
-                <Table columns={flowColumns} dataSource={flows} rowKey="_id" loading={isFlowsLoading} pagination={{ pageSize: 10 }} />
+            <Card style={{ marginBottom: 24, background: '#f6ffed', borderColor: '#b7eb8f' }}>
+                <Result
+                    icon={<RobotOutlined style={{ color: '#52c41a' }} />}
+                    title="AI Ecommerce Assistant is Active"
+                    subTitle="Your WhatsApp channel is now fully automated with intelligent intent matching, dynamic product fetching, and cart management."
+                    extra={
+                        <Space>
+                            <Tag color="green" style={{ padding: '4px 8px', fontSize: 14 }}>Status: Online & Handling Queries</Tag>
+                        </Space>
+                    }
+                />
             </Card>
+
+            <Alert
+                message="Static Flows Disabled"
+                description="The legacy visual flow builder has been replaced by the dynamic AI state engine. All incomings queries without active sessions are routed directly to the AI assistant."
+                type="info"
+                showIcon
+                style={{ marginBottom: 24 }}
+            />
 
             <div style={{ marginTop: 24 }}>
                 <Title level={5}>Legacy Rules</Title>

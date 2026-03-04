@@ -10,3 +10,6 @@ authRouter.post('/login', validate(loginSchema), authController.login);
 authRouter.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
 authRouter.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 authRouter.get('/me', authController.me);
+
+authRouter.get('/meta/login', authController.metaLogin);
+authRouter.get('/meta/callback', authController.metaCallback);

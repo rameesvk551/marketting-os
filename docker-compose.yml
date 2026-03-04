@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: marketing_os_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: edger_user
+      POSTGRES_PASSWORD: edger_pass
+      POSTGRES_DB: travel_ops
+    ports:
+      - "5436:5432" # Maps host port 5436 to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edger_user -d travel_ops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: marketing_os_redis
+    restart: unless-stopped
+    ports:
+      - "6378:6379" # Maps host port 6378 to container port 6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:6
+    container_name: marketing_os_mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017" # Maps host port 27018 to container port 27017
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongodb_data:

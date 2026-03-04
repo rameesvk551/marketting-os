@@ -32,7 +32,7 @@ export function StatusChart({ stats }: StatusChartProps) {
                     <XAxis dataKey="status" tick={{ fontSize: 11 }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                     <Tooltip
-                        formatter={(value: number) => [`${value} leads`]}
+                        formatter={((value: number) => [`${value} leads`]) as any}
                         contentStyle={{ borderRadius: 12, fontSize: 13 }}
                     />
                     <Bar dataKey="count" radius={[8, 8, 0, 0]}>

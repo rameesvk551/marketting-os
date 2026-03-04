@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import type { Activity } from '../data/activities';
 import { activities as allActivities } from '../data/activities';
 
 export function useLeadActivities(leadId: string | null) {

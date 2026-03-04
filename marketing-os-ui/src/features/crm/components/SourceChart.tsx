@@ -36,7 +36,7 @@ export function SourceChart({ stats }: SourceChartProps) {
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number, name: string) => [`${value} leads`, name]}
+                        formatter={((value: number, name: string) => [`${value} leads`, name]) as any}
                         contentStyle={{ borderRadius: 12, fontSize: 13 }}
                     />
                     <Legend

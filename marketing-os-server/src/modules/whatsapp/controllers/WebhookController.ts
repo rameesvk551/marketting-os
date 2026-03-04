@@ -8,6 +8,7 @@ export function createWebhookController(
     flowEngine: any,
     tenantRepository: any,
     auditRepo?: any,
+    aiEcommerceAssistant?: any,
 ) {
     const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'marketing-os-verify-token';
 
@@ -209,7 +210,17 @@ export function createWebhookController(
                     await handleConsentKeywords(tenantId, message.senderPhone, message.textContent?.body);
 
                     if (!result.isNewConversation) { await handleBusinessHours(tenantId, message.senderPhone); }
-                    if (result.isNewConversation) {
+
+                    // Route to AI Assistant if available
+                    if (aiEcommerceAssistant) {
+                        console.log(`[Webhook] Routing message from ${message.senderPhone} to AI Assistant.`);
+                        await aiEcommerceAssistant.handleMessage(
+                            tenantId,
+                            message.senderPhone,
+                            message.textContent?.body,
+                            message.selectedButtonId || message.selectedListItemId
+                        );
+                    } else if (result.isNewConversation) {
                         console.log(`[Webhook] New conversation detected for ${message.senderPhone}. Triggering welcome flow.`);
                         flowEngine.triggerSystemFlow(tenantId, 'welcome', message.senderPhone).catch((err: any) => {
                             console.error('[Webhook] Failed to trigger welcome flow:', err);

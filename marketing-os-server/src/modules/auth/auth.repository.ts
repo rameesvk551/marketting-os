@@ -44,3 +44,15 @@ export const updateUserPassword = async (userId: string, passwordHash: string) =
     await user.update({ password_hash: passwordHash });
     return user;
 };
+
+export const updateUserMeta = async (userId: string, metaFields: {
+    metaAccessToken?: string;
+    metaBusinessId?: string;
+    metaWabaId?: string;
+    metaPhoneNumberId?: string;
+}) => {
+    const user = await db.User.findByPk(userId);
+    if (!user) return null;
+    await user.update(metaFields);
+    return user;
+};

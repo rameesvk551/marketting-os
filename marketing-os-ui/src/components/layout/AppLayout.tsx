@@ -12,6 +12,9 @@ import {
     WhatsAppOutlined,
     MenuOutlined,
     CloseOutlined,
+    ShopOutlined,
+    AppstoreOutlined,
+    ShoppingCartOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../context/AuthContext';
@@ -42,6 +45,21 @@ const navItems: MenuItem[] = [
         key: '/settings',
         icon: <SettingOutlined />,
         label: 'Settings',
+    },
+    {
+        type: 'divider',
+    },
+    {
+        key: '/configure-business',
+        icon: <ShopOutlined />,
+        label: 'Configure Business',
+        children: [
+            { key: '/configure-business/profile', label: 'Business Profile' },
+            { key: '/configure-business/products', icon: <AppstoreOutlined />, label: 'Products' },
+            { key: '/configure-business/categories', icon: <AppstoreOutlined />, label: 'Categories' },
+            { key: '/configure-business/orders', icon: <ShoppingCartOutlined />, label: 'Orders' },
+            { key: '/configure-business/payment-settings', label: 'Payment Settings' },
+        ],
     },
 ];
 

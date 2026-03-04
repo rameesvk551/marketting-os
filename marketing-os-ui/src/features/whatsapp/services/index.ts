@@ -9,7 +9,7 @@ export type { TemplateFilters } from './templateService';
 export { broadcastService } from './broadcastService';
 export type { BroadcastPayload } from './broadcastService';
 
-export { automationRuleService, automationFlowService } from './automationService';
+export { automationRuleService } from './automationService';
 
 export { analyticsService } from './analyticsService';
 

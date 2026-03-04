@@ -5,6 +5,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { LeadsPage as CRMDashboard } from './features/crm';
 import { WhatsAppDashboard } from './features/whatsapp';
 import { SettingsLayout } from './features/settings';
+import { ConfigureBusinessLayout } from './features/configure-business';
 
 // Auth Imports
 import { AuthProvider } from './context/AuthContext';
@@ -12,6 +13,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import MetaAuthCallback from './pages/auth/MetaAuthCallback';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { AdminShell } from './admin';
 import { AdminRoleGuard } from './admin/components/auth/AdminRoleGuard';
@@ -105,6 +107,7 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/auth/meta/callback" element={<MetaAuthCallback />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
               {/* Super Admin Routes */}
@@ -144,6 +147,7 @@ function App() {
                 <Route path="crm" element={<CRMDashboard />} />
                 <Route path="whatsapp" element={<WhatsAppDashboard />} />
                 <Route path="settings" element={<SettingsLayout />} />
+                <Route path="configure-business/*" element={<ConfigureBusinessLayout />} />
               </Route>
             </Routes>
           </BrowserRouter>

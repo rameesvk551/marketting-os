@@ -9,6 +9,7 @@ import {
   SettingsController,
   EmbeddedSignupController,
   BroadcastController,
+  MetaController,
 } from './controllers/index.js';
 import { getConfig } from '../../config/index.js';
 
@@ -57,6 +58,7 @@ export function createWhatsAppRoutes(dependencies: {
   settingsController: SettingsController;
   embeddedSignupController: EmbeddedSignupController;
   broadcastController: BroadcastController;
+  metaController: MetaController;
   optInRepo: any; // For opt-in validation middleware
   authMiddleware: (req: any, res: any, next: any) => void;
   tenantMiddleware: (req: any, res: any, next: any) => void;
@@ -69,6 +71,8 @@ export function createWhatsAppRoutes(dependencies: {
     settingsController,
     embeddedSignupController,
     broadcastController,
+    metaController,
+    automationController,
     optInRepo,
     authMiddleware,
     tenantMiddleware,
@@ -171,6 +175,18 @@ export function createWhatsAppRoutes(dependencies: {
     embeddedSignupController.complete
   );
 
+  // ============================================
+  // META BUSINESS ROUTES (OAuth Flow Data)
+  // ============================================
+
+  router.get('/meta/business-details',
+    metaController.getBusinessDetails
+  );
+
+  router.get('/meta/assets',
+    metaController.getConnectedAssets
+  );
+
 
 
   // ============================================
@@ -227,6 +243,30 @@ export function createWhatsAppRoutes(dependencies: {
   router.post('/conversations/:id/send-template',
     sendMessageRateLimiter,
     conversationController.sendConversationTemplate
+  );
+
+  // ============================================
+  // AUTOMATION RULES ROUTES
+  // ============================================
+
+  router.get('/automation/rules',
+    automationController.getRules
+  );
+
+  router.post('/automation/rules',
+    automationController.createRule
+  );
+
+  router.put('/automation/rules/:id',
+    automationController.updateRule
+  );
+
+  router.delete('/automation/rules/:id',
+    automationController.deleteRule
+  );
+
+  router.post('/automation/simulate',
+    automationController.simulate
   );
 
   // ============================================

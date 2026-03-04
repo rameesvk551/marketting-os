@@ -22,7 +22,6 @@ export {
     templateService,
     broadcastService,
     automationRuleService,
-    automationFlowService,
     analyticsService,
     contactService,
 } from './services';

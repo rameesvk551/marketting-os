@@ -52,7 +52,10 @@ export function createMetaTemplateSyncService(providerFactory: any, apiVersion?:
         try {
             const response = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${creds.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             const data = await response.json() as any;
-            if (data.error) { console.error(`[MetaTemplateSyncService] Create template error:`, data.error); throw new Error(data.error.message || 'Failed to create template on Meta'); }
+            if (data.error) {
+                console.error(`[MetaTemplateSyncService] Create template error:`, data.error);
+                throw new Error(data.error.error_user_msg || data.error.message || 'Failed to create template on Meta');
+            }
             return { id: data.id, status: data.status || 'PENDING' };
         } catch (error) { console.error(`[MetaTemplateSyncService] Create template failed:`, error); throw error; }
     }

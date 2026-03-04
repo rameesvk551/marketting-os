@@ -61,8 +61,12 @@ export function useTemplates() {
     /* mutations */
     const createTemplateMutation = useMutation({
         mutationFn: templateService.createTemplate,
-        onSuccess: () => {
-            message.success('Template created successfully');
+        onSuccess: (response: any) => {
+            if (response?.data?.warning || response?.warning) {
+                message.warning(response?.data?.warning || response?.warning);
+            } else {
+                message.success('Template created successfully');
+            }
             setIsDrawerVisible(false);
             form.resetFields();
             queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] });
@@ -121,7 +125,7 @@ export function useTemplates() {
                         type: btn.type,
                         text: btn.text,
                         ...(btn.type === 'URL' ? { url: btn.value } : {}),
-                        ...(btn.type === 'PHONE_NUMBER' ? { phone_number: btn.value } : {}),
+                        ...(btn.type === 'PHONE_NUMBER' ? { phone_number: `+${btn.value.replace(/\D/g, '')}` } : {}),
                     })),
                 });
             }

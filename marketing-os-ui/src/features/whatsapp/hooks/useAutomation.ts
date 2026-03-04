@@ -1,18 +1,14 @@
 // hooks/useAutomation.ts
 // All state, queries, mutations and handlers for the Automation tab.
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form, Modal, message } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { automationRuleService, automationFlowService } from '../services/automationService';
-import type { FlowEditorRef } from '../components/flow/FlowEditor';
+import { automationRuleService } from '../services/automationService';
 
 export function useAutomation() {
-    const [isFlowEditorVisible, setIsFlowEditorVisible] = useState(false);
-    const flowEditorRef = React.useRef<FlowEditorRef>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingRule, setEditingRule] = useState<any>(null);
-    const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
     const [form] = Form.useForm();
     const queryClient = useQueryClient();
 
@@ -106,56 +102,19 @@ export function useAutomation() {
     };
 
     /* ── Flows ── */
-    const { data: flowsData, isLoading: isFlowsLoading, refetch: refetchFlows } = useQuery({
-        queryKey: ['automation-flows'],
-        queryFn: automationFlowService.getFlows,
-    });
-    const flows: any[] = flowsData?.data || [];
-
-    const handleEditFlow = (flowId: string) => {
-        setSelectedFlowId(flowId);
-        setIsFlowEditorVisible(true);
-    };
-
-    const handleCreateFlow = () => {
-        setSelectedFlowId(null);
-        setIsFlowEditorVisible(true);
-    };
-
-    const handleDeleteFlow = async (id: string) => {
-        try {
-            await automationFlowService.deleteFlow(id);
-            message.success('Flow deleted');
-            refetchFlows();
-        } catch {
-            message.error('Failed to delete flow');
-        }
-    };
-
-    const handleBackFromEditor = () => {
-        setIsFlowEditorVisible(false);
-        refetchFlows();
-    };
-
-    const handleSaveFlow = () => {
-        flowEditorRef.current?.saveFlow();
-    };
+    // Left empty for now, or you can completely remove flow logic if purely unused.
+    // We remove the query out of useAutomation for flows since the UI is gone.
 
     return {
         // state
         form,
-        isFlowEditorVisible,
         isModalVisible,
         setIsModalVisible,
         editingRule,
-        selectedFlowId,
-        flowEditorRef,
 
         // data
         rules,
         isRulesLoading,
-        flows,
-        isFlowsLoading,
 
         // mutation states
         isRuleSaving: createRuleMutation.isPending || updateRuleMutation.isPending,
@@ -164,12 +123,5 @@ export function useAutomation() {
         handleEditRule,
         handleDeleteRule,
         handleSaveRule,
-
-        // flow handlers
-        handleEditFlow,
-        handleCreateFlow,
-        handleDeleteFlow,
-        handleBackFromEditor,
-        handleSaveFlow,
     };
 }

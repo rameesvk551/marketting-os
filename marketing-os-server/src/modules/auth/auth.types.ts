@@ -21,6 +21,10 @@ export interface UserPayload {
     role: string;
     tenantId: string;
     tenantName: string;
+    metaAccessToken?: string;
+    metaBusinessId?: string;
+    metaWabaId?: string;
+    metaPhoneNumberId?: string;
 }
 
 export interface AuthResponse {

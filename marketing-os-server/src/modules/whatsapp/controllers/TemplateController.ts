@@ -56,8 +56,14 @@ export function createTemplateController(templateRepo: any, metaSync?: any) {
             if (!template) { res.status(404).json({ error: 'Template not found' }); return; }
             if (metaSync && template.components) {
                 try {
-                    const metaResult = await metaSync.createTemplate(tenantId, { name: template.name || template.template_name, category: template.category || 'UTILITY', language: template.language || 'en', components: template.components });
-                    if (metaResult) { template.meta_template_id = metaResult.id; template.status = metaResult.status || 'PENDING'; } else { return res.status(400).json({ error: 'WhatsApp credentials not configured. Cannot submit to Meta.' }); }
+                    if (template.meta_template_id) {
+                        const success = await metaSync.updateTemplate(tenantId, template.meta_template_id, template.components);
+                        if (!success) return res.status(400).json({ error: 'Failed to update template on Meta.' });
+                        template.status = 'PENDING';
+                    } else {
+                        const metaResult = await metaSync.createTemplate(tenantId, { name: template.name || template.template_name, category: template.category || 'UTILITY', language: template.language || 'en', components: template.components });
+                        if (metaResult) { template.meta_template_id = metaResult.id; template.status = metaResult.status || 'PENDING'; } else { return res.status(400).json({ error: 'WhatsApp credentials not configured. Cannot submit to Meta.' }); }
+                    }
                 } catch (metaError: any) { return res.status(400).json({ error: `Failed to submit to Meta: ${metaError.message}` }); }
             } else { template.status = 'PENDING'; }
             template.submittedAt = new Date(); template.tenantId = tenantId;
@@ -101,18 +107,20 @@ export function createTemplateController(templateRepo: any, metaSync?: any) {
     };
 
     const getCategories = async (_req: any, res: any) => {
-        res.json({ data: [ { value: 'MARKETING', label: 'Marketing', description: 'Promotional messages' }, { value: 'UTILITY', label: 'Utility', description: 'Transactional updates' }, { value: 'AUTHENTICATION', label: 'Authentication', description: 'OTP and login' }, { value: 'SERVICE', label: 'Service', description: 'Customer service' } ] });
+        res.json({ data: [{ value: 'MARKETING', label: 'Marketing', description: 'Promotional messages' }, { value: 'UTILITY', label: 'Utility', description: 'Transactional updates' }, { value: 'AUTHENTICATION', label: 'Authentication', description: 'OTP and login' }, { value: 'SERVICE', label: 'Service', description: 'Customer service' }] });
     };
 
     const getTriggers = async (_req: any, res: any) => {
-        res.json({ data: [
-            { value: 'lead.created', label: 'Lead Created', entity: 'lead' }, { value: 'lead.stage_changed', label: 'Lead Stage Changed', entity: 'lead' }, { value: 'lead.quote_sent', label: 'Quote Sent', entity: 'lead' },
-            { value: 'booking.created', label: 'Booking Created', entity: 'booking' }, { value: 'booking.confirmed', label: 'Booking Confirmed', entity: 'booking' }, { value: 'booking.payment_received', label: 'Payment Received', entity: 'booking' }, { value: 'booking.cancelled', label: 'Booking Cancelled', entity: 'booking' }, { value: 'booking.reminder', label: 'Trip Reminder', entity: 'booking' },
-            { value: 'departure.opened', label: 'Departure Opened', entity: 'departure' }, { value: 'departure.few_left', label: 'Few Spots Left', entity: 'departure' }, { value: 'departure.full', label: 'Departure Full', entity: 'departure' }, { value: 'departure.tomorrow', label: 'Departure Tomorrow', entity: 'departure' }, { value: 'departure.started', label: 'Trip Started', entity: 'departure' }, { value: 'departure.ended', label: 'Trip Ended', entity: 'departure' },
-            { value: 'payment.due', label: 'Payment Due', entity: 'payment' }, { value: 'payment.overdue', label: 'Payment Overdue', entity: 'payment' }, { value: 'payment.refunded', label: 'Payment Refunded', entity: 'payment' },
-            { value: 'assignment.proposed', label: 'Assignment Proposed', entity: 'tripAssignment' }, { value: 'assignment.confirmed', label: 'Assignment Confirmed', entity: 'tripAssignment' },
-            { value: 'issue.reported', label: 'Issue Reported', entity: 'issue' }, { value: 'issue.escalated', label: 'Issue Escalated', entity: 'issue' }, { value: 'issue.resolved', label: 'Issue Resolved', entity: 'issue' },
-        ] });
+        res.json({
+            data: [
+                { value: 'lead.created', label: 'Lead Created', entity: 'lead' }, { value: 'lead.stage_changed', label: 'Lead Stage Changed', entity: 'lead' }, { value: 'lead.quote_sent', label: 'Quote Sent', entity: 'lead' },
+                { value: 'booking.created', label: 'Booking Created', entity: 'booking' }, { value: 'booking.confirmed', label: 'Booking Confirmed', entity: 'booking' }, { value: 'booking.payment_received', label: 'Payment Received', entity: 'booking' }, { value: 'booking.cancelled', label: 'Booking Cancelled', entity: 'booking' }, { value: 'booking.reminder', label: 'Trip Reminder', entity: 'booking' },
+                { value: 'departure.opened', label: 'Departure Opened', entity: 'departure' }, { value: 'departure.few_left', label: 'Few Spots Left', entity: 'departure' }, { value: 'departure.full', label: 'Departure Full', entity: 'departure' }, { value: 'departure.tomorrow', label: 'Departure Tomorrow', entity: 'departure' }, { value: 'departure.started', label: 'Trip Started', entity: 'departure' }, { value: 'departure.ended', label: 'Trip Ended', entity: 'departure' },
+                { value: 'payment.due', label: 'Payment Due', entity: 'payment' }, { value: 'payment.overdue', label: 'Payment Overdue', entity: 'payment' }, { value: 'payment.refunded', label: 'Payment Refunded', entity: 'payment' },
+                { value: 'assignment.proposed', label: 'Assignment Proposed', entity: 'tripAssignment' }, { value: 'assignment.confirmed', label: 'Assignment Confirmed', entity: 'tripAssignment' },
+                { value: 'issue.reported', label: 'Issue Reported', entity: 'issue' }, { value: 'issue.escalated', label: 'Issue Escalated', entity: 'issue' }, { value: 'issue.resolved', label: 'Issue Resolved', entity: 'issue' },
+            ]
+        });
     };
 
     return { list, get, create, update, submit, syncFromMeta, test, delete: deleteTemplate, getCategories, getTriggers };

@@ -19,6 +19,10 @@ module.exports = (sequelize: any, DataTypes: any) => {
             status: DataTypes.BOOLEAN,
             isDeleted: DataTypes.BOOLEAN,
             allowLogin: DataTypes.BOOLEAN,
+            metaAccessToken: DataTypes.STRING,
+            metaBusinessId: DataTypes.STRING,
+            metaWabaId: DataTypes.STRING,
+            metaPhoneNumberId: DataTypes.STRING,
         },
         {
             sequelize,

@@ -5,7 +5,7 @@ import {
     Progress, Empty, Spin,
 } from 'antd';
 import {
-    ReloadOutlined, EyeOutlined, CheckCircleOutlined,
+    ReloadOutlined, CheckCircleOutlined,
     ClockCircleOutlined, SyncOutlined, CloseCircleOutlined,
     SendOutlined, CalendarOutlined,
 } from '@ant-design/icons';

@@ -50,7 +50,7 @@ export function LeadsPage() {
     const [addModalOpen, setAddModalOpen] = useState(false);
 
     /* ── lead store (stateful CRUD) ── */
-    const { leads, addLead, updateLeadStatus, deleteLead, bulkUpdateStatus, bulkDelete, bulkAssign } = useLeadStore();
+    const { leads, addLead, updateLeadStatus, deleteLead: _deleteLead, bulkUpdateStatus, bulkDelete, bulkAssign } = useLeadStore();
 
     /* ── filters on stateful leads ── */
     const { searchTerm, setSearchTerm, statusFilter, setStatusFilter, filteredLeads } = useLeadFilters(leads);

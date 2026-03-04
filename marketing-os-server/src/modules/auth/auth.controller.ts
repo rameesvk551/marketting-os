@@ -57,3 +57,26 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 
     ApiResponse.success(res, null, 'Password reset successful');
 });
+
+export const metaLogin = asyncHandler(async (req: Request, res: Response) => {
+    // We expect the state to be the user's authenticating JWT token so we can link
+    const redirectUri = req.query.redirectUri as string || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/meta/callback`;
+    const state = req.query.token as string;
+
+    if (!state) {
+        throw new AppError('Authorization token is required to link Meta account', 401);
+    }
+
+    const url = await authService.getMetaLoginUrl(redirectUri, state);
+    ApiResponse.success(res, { url }, 'Meta login URL generated');
+});
+
+export const metaCallback = asyncHandler(async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+    const redirectUri = req.query.redirectUri as string || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/meta/callback`;
+
+    validateRequired({ code, state });
+
+    const result = await authService.handleMetaCallback(code as string, state as string, redirectUri);
+    ApiResponse.success(res, result, 'Meta authentication successful');
+});

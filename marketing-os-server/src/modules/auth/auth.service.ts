@@ -5,6 +5,7 @@ import { getRedisClient } from '../../config/redis.js';
 import { getConfig } from '../../config/env.js';
 import { AppError, UnauthorizedError } from '../../utils/apiError.js';
 import * as authRepository from './auth.repository.js';
+import axios from 'axios';
 // Email module removed — stub until mailer is re-integrated
 const sendEmail = async (to: string, subject: string, html: string) => {
     console.log(`[EMAIL STUB] To: ${to}, Subject: ${subject}`);
@@ -188,6 +189,69 @@ export const resetPassword = async (token: string, newPassword: string): Promise
     }
 
     await redisClient.del(`reset_token:${token}`);
+};
+
+export const getMetaLoginUrl = async (redirectUri: string, state: string): Promise<string> => {
+    const config = getConfig();
+    const appId = config.whatsapp.meta?.appId;
+    if (!appId) {
+        throw new AppError('Meta App ID is not configured', 500);
+    }
+
+    const { apiVersion } = config.whatsapp.meta || {};
+    const version = apiVersion || 'v21.0';
+    const scope = 'whatsapp_business_management,whatsapp_business_messaging,business_management,whatsapp_business_manage_events,manage_app_solution,email,public_profile';
+    return `https://www.facebook.com/${version}/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(state)}`;
+};
+
+export const handleMetaCallback = async (code: string, state: string, redirectUri: string): Promise<any> => {
+    const config = getConfig();
+    const appId = config.whatsapp.meta?.appId;
+    const appSecret = config.whatsapp.meta?.appSecret;
+    const { apiVersion } = config.whatsapp.meta || {};
+    const version = apiVersion || 'v21.0';
+
+    if (!appId || !appSecret) {
+        throw new AppError('Meta App ID or App Secret is not configured', 500);
+    }
+
+    try {
+        // Exchange code for access token
+        const tokenResponse = await axios.get(`https://graph.facebook.com/${version}/oauth/access_token`, {
+            params: {
+                client_id: appId,
+                redirect_uri: redirectUri,
+                client_secret: appSecret,
+                code,
+            }
+        });
+
+        const metaAccessToken = tokenResponse.data.access_token;
+        if (!metaAccessToken) {
+            throw new AppError('Failed to retrieve Meta access token', 400);
+        }
+
+        // The state contains the JWT or we can decode it to get the user ID
+        // In our validateToken, we expect a valid encoded JWT
+        const decoded = validateToken(state);
+        const userId = decoded.userId;
+
+        // Optionally fetch user info to verify
+        // const meResponse = await axios.get(`https://graph.facebook.com/${version}/me?access_token=${metaAccessToken}`);
+
+        await authRepository.updateUserMeta(userId, {
+            metaAccessToken
+        });
+
+        return {
+            success: true,
+            message: 'Meta accounts linked successfully',
+            metaAccessToken: 'HIDDEN' // Don't return the raw token for security, maybe just a success flag
+        };
+    } catch (error: any) {
+        console.error('Meta Callback Error:', error.response?.data || error.message);
+        throw new AppError(error.response?.data?.error?.message || 'Failed to link Meta account', 400);
+    }
 };
 
 const generateToken = (userId: string, tenantId: string, role: string): string => {
