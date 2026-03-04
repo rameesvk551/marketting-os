@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Typography, Steps, Button, Alert, Result, Input, Form, Space, Divider, Spin } from 'antd';
-import { RocketOutlined, PhoneOutlined, LinkOutlined, CheckCircleOutlined, SyncOutlined } from '@ant-design/icons';
+// ── Meta Embedded Signup (Tab version) ──
+// Uses the Facebook JavaScript SDK (FB.login) for WhatsApp Embedded Signup.
+// This component is self-contained — fetches config from the API and handles the flow.
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Typography, Steps, Button, Alert, Result, Spin, message as antMessage } from 'antd';
+import { RocketOutlined, LinkOutlined, CheckCircleOutlined, SyncOutlined, FacebookOutlined, LoadingOutlined } from '@ant-design/icons';
 import client from '../../../../api/client';
 
 const { Title, Text, Paragraph } = Typography;
 
+// Extend Window to include FB SDK types
+declare global {
+    interface Window {
+        FB: any;
+        fbAsyncInit: () => void;
+    }
+}
+
 const EmbeddedSignup: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
-    const [_loading, _setLoading] = useState(false);
     const [config, setConfig] = useState<any>(null);
     const [configLoading, setConfigLoading] = useState(true);
+    const [completing, setCompleting] = useState(false);
+    const [sdkReady, setSdkReady] = useState(false);
+    const [sdkError, setSdkError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchConfig();
@@ -19,8 +33,11 @@ const EmbeddedSignup: React.FC = () => {
         setConfigLoading(true);
         try {
             const response = await client.get('/whatsapp/settings/embedded/config');
-            if (response.data.status === 'success') {
-                setConfig(response.data.data);
+            const data = response.data?.data;
+            if (data) {
+                setConfig(data);
+                // Load Facebook SDK once we have the appId
+                loadFacebookSDK(data.appId);
             }
         } catch (err: any) {
             console.error('Failed to fetch embedded signup config:', err);
@@ -29,11 +46,108 @@ const EmbeddedSignup: React.FC = () => {
         }
     };
 
-    const handleStartOnboarding = () => {
-        // In production, this would launch the Facebook Embedded Signup SDK
-        // For now, we show the step-by-step flow
-        setCurrentStep(1);
+    const loadFacebookSDK = (appId: string) => {
+        if (!appId) return;
+
+        // If already loaded
+        if (window.FB) {
+            window.FB.init({
+                appId,
+                cookie: true,
+                xfbml: true,
+                version: 'v21.0',
+            });
+            setSdkReady(true);
+            return;
+        }
+
+        // Set up fbAsyncInit callback
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                appId,
+                cookie: true,
+                xfbml: true,
+                version: 'v21.0',
+            });
+            setSdkReady(true);
+        };
+
+        // Check if script already exists
+        if (document.getElementById('facebook-jssdk')) {
+            return;
+        }
+
+        // Inject the SDK script
+        const script = document.createElement('script');
+        script.id = 'facebook-jssdk';
+        script.src = 'https://connect.facebook.net/en_US/sdk.js';
+        script.async = true;
+        script.defer = true;
+        script.crossOrigin = 'anonymous';
+        script.onerror = () => {
+            setSdkError('Failed to load Facebook SDK. Check your internet or ad-blocker.');
+        };
+        document.body.appendChild(script);
     };
+
+    const handleStartOnboarding = useCallback(() => {
+        if (!config?.appId) {
+            antMessage.error('Configuration not loaded. Please refresh.');
+            return;
+        }
+
+        if (!sdkReady || !window.FB) {
+            antMessage.error('Facebook SDK is not loaded yet. Please wait a moment and try again.');
+            return;
+        }
+
+        // Use FB.login() — no redirect URI needed
+        const loginOptions: any = {
+            scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
+            extras: {
+                feature: 'whatsapp_embedded_signup',
+                setup: {},
+            },
+        };
+
+        if (config.configId) {
+            loginOptions.config_id = config.configId;
+        }
+
+        window.FB.login(
+            async (response: any) => {
+                if (response.authResponse) {
+                    const code = response.authResponse.code;
+                    const accessToken = response.authResponse.accessToken;
+                    const authCode = code || accessToken;
+
+                    if (authCode) {
+                        setCompleting(true);
+                        setCurrentStep(2);
+                        try {
+                            await client.post('/whatsapp/settings/embedded/complete', {
+                                code: authCode,
+                            });
+                            setCurrentStep(3);
+                            antMessage.success('WhatsApp Business Account connected successfully!');
+                        } catch (err: any) {
+                            antMessage.error(err?.response?.data?.error || 'Failed to complete signup.');
+                            setCurrentStep(0);
+                        } finally {
+                            setCompleting(false);
+                        }
+                    } else {
+                        antMessage.error('Facebook login succeeded but no authorization code was returned.');
+                    }
+                } else {
+                    antMessage.info('Facebook login was cancelled.');
+                }
+            },
+            loginOptions,
+        );
+
+        setCurrentStep(1);
+    }, [config, sdkReady]);
 
     const steps = [
         {
@@ -42,9 +156,9 @@ const EmbeddedSignup: React.FC = () => {
             description: 'Initiate business onboarding',
         },
         {
-            title: 'Register Phone',
-            icon: <PhoneOutlined />,
-            description: 'Register a new phone number',
+            title: 'Facebook Login',
+            icon: <FacebookOutlined />,
+            description: 'Authenticate with Meta',
         },
         {
             title: 'Link WABA',
@@ -84,7 +198,7 @@ const EmbeddedSignup: React.FC = () => {
                     message="Embedded Signup Ready"
                     description={
                         <span>
-                            App ID: <Text copyable>{config.appId}</Text> — Configuration is available for embedded signup.
+                            App ID: <Text copyable>{config.appId}</Text> — {sdkReady ? 'Facebook SDK loaded. Ready to onboard clients.' : 'Loading Facebook SDK...'}
                         </span>
                     }
                     type="success"
@@ -99,6 +213,15 @@ const EmbeddedSignup: React.FC = () => {
                 />
             )}
 
+            {sdkError && (
+                <Alert
+                    message="Facebook SDK Error"
+                    description={sdkError}
+                    type="error"
+                    showIcon
+                />
+            )}
+
             {/* Steps Progress */}
             <Card bordered={false} className="shadow-sm">
                 <Steps
@@ -106,8 +229,6 @@ const EmbeddedSignup: React.FC = () => {
                     items={steps}
                     className="mb-8"
                 />
-
-                <Divider />
 
                 {/* Step Content */}
                 {currentStep === 0 && (
@@ -121,56 +242,35 @@ const EmbeddedSignup: React.FC = () => {
                         <Button
                             type="primary"
                             size="large"
-                            icon={<RocketOutlined />}
+                            icon={<FacebookOutlined />}
                             onClick={handleStartOnboarding}
-                            disabled={!config?.appId}
+                            disabled={!config?.appId || !sdkReady}
                             className="mt-4"
+                            style={{
+                                background: '#1877F2',
+                                borderColor: '#1877F2',
+                            }}
                         >
-                            Start Onboarding
+                            {sdkReady ? 'Start Onboarding' : 'Loading SDK...'}
                         </Button>
                     </div>
                 )}
 
                 {currentStep === 1 && (
-                    <div className="max-w-md mx-auto py-6">
-                        <Title level={5}>Register a New Phone Number</Title>
-                        <Paragraph type="secondary">
-                            Provide the phone number that will be used for WhatsApp Business messaging.
+                    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                        <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
+                        <Paragraph style={{ marginTop: 16 }} type="secondary">
+                            Waiting for Facebook login to complete...
                         </Paragraph>
-                        <Form layout="vertical">
-                            <Form.Item label="Phone Number (with country code)" required>
-                                <Input placeholder="+91 98765 43210" size="large" />
-                            </Form.Item>
-                            <Form.Item label="Display Name" required>
-                                <Input placeholder="Your Business Name" size="large" />
-                            </Form.Item>
-                            <Space>
-                                <Button onClick={() => setCurrentStep(0)}>Back</Button>
-                                <Button type="primary" onClick={() => setCurrentStep(2)}>
-                                    Register &amp; Continue
-                                </Button>
-                            </Space>
-                        </Form>
                     </div>
                 )}
 
-                {currentStep === 2 && (
-                    <div className="max-w-md mx-auto py-6">
-                        <Title level={5}>Link to WhatsApp Business Account</Title>
-                        <Paragraph type="secondary">
-                            Select or create a WABA to link this phone number to.
+                {currentStep === 2 && completing && (
+                    <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                        <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
+                        <Paragraph style={{ marginTop: 16 }} type="secondary">
+                            Linking your WhatsApp Business Account... This may take a moment.
                         </Paragraph>
-                        <Form layout="vertical">
-                            <Form.Item label="WABA ID (optional — leave blank to create new)">
-                                <Input placeholder="e.g. 123456789012345" size="large" />
-                            </Form.Item>
-                            <Space>
-                                <Button onClick={() => setCurrentStep(1)}>Back</Button>
-                                <Button type="primary" onClick={() => setCurrentStep(3)}>
-                                    Link &amp; Complete
-                                </Button>
-                            </Space>
-                        </Form>
                     </div>
                 )}
 

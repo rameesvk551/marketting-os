@@ -20,14 +20,14 @@ export function createEmbeddedSignupController(
             const tenantId = req.context?.tenantId;
             if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
 
-            const appId = process.env.FACEBOOK_APP_ID || '';
-            const configId = process.env.FACEBOOK_CONFIG_ID || '';
-            const redirectUri = process.env.FACEBOOK_REDIRECT_URI ||
-                `${process.env.API_BASE_URL || 'http://localhost:5000/api/v1'}/whatsapp/settings/embedded/callback`;
+            const appId = process.env.META_APP_ID || '';
+            const configId = process.env.META_CONFIG_ID || '';
+            const redirectUri = process.env.META_REDIRECT_URI ||
+                `${process.env.API_BASE_URL || 'http://localhost:8000/api/v1'}/whatsapp/settings/embedded/callback`;
 
             if (!appId) {
                 res.status(501).json({
-                    error: 'Facebook Embedded Signup is not configured. Set FACEBOOK_APP_ID in environment.',
+                    error: 'Facebook Embedded Signup is not configured. Set META_APP_ID in environment.',
                 });
                 return;
             }
@@ -53,9 +53,9 @@ export function createEmbeddedSignupController(
             }
 
             // Exchange the short-lived code for a System User Access Token
-            const appId = process.env.FACEBOOK_APP_ID || '';
-            const appSecret = process.env.FACEBOOK_APP_SECRET || '';
-            const redirectUri = process.env.FACEBOOK_REDIRECT_URI || '';
+            const appId = process.env.META_APP_ID || '';
+            const appSecret = process.env.META_APP_SECRET || '';
+            const redirectUri = process.env.META_REDIRECT_URI || '';
 
             if (!appId || !appSecret) {
                 res.status(501).json({ error: 'Facebook app credentials are not configured' });

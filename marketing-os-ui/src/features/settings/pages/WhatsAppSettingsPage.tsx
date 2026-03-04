@@ -18,7 +18,6 @@ import type { WhatsAppConnectionMethod } from '../types';
 import BusinessOverview from '../../whatsapp/components/meta/BusinessOverview';
 import ConnectedAssets from '../../whatsapp/components/meta/ConnectedAssets';
 import WebhookLogs from '../../whatsapp/components/meta/WebhookLogs';
-import MetaEmbeddedSignup from '../../whatsapp/components/meta/EmbeddedSignup';
 import UserProfile from '../../whatsapp/components/meta/UserProfile';
 
 const { Title, Text } = Typography;
@@ -172,7 +171,17 @@ const WhatsAppSettingsPage: React.FC = () => {
           {
             key: 'signup',
             label: <span><RocketOutlined /> Embedded Signup</span>,
-            children: <div style={{ marginTop: 16 }}><MetaEmbeddedSignup /></div>
+            children: (
+              <div style={{ marginTop: 16 }}>
+                <EmbeddedSignup
+                  embeddedConfig={embeddedConfig}
+                  onFetchConfig={() => fetchEmbeddedConfig()}
+                  isFetchingConfig={isEmbeddedConfigLoading}
+                  onComplete={completeEmbedded}
+                  isCompleting={isCompletingEmbedded}
+                />
+              </div>
+            )
           },
           {
             key: 'profile',

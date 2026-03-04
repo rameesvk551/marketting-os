@@ -1,9 +1,9 @@
 // ── EmbeddedSignup ──
-// Facebook Embedded Signup flow for new WhatsApp users.
-// Renders the "Continue with Facebook" button and handles the popup callback.
+// Facebook Embedded Signup flow for WhatsApp Business API.
+// Uses the Facebook JavaScript SDK (FB.login) — no redirect URI required.
 // ZERO business logic — delegates to hook via props.
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
   Button,
@@ -12,6 +12,7 @@ import {
   Alert,
   Steps,
   Spin,
+  message as antMessage,
 } from 'antd';
 import {
   FacebookOutlined,
@@ -20,9 +21,18 @@ import {
   PhoneOutlined,
   LinkOutlined,
   LoadingOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
+
+// Extend Window to include FB SDK types
+declare global {
+  interface Window {
+    FB: any;
+    fbAsyncInit: () => void;
+  }
+}
 
 interface EmbeddedSignupProps {
   embeddedConfig: { appId: string; configId: string; redirectUri: string } | null;
@@ -39,57 +49,108 @@ const EmbeddedSignup: React.FC<EmbeddedSignupProps> = ({
   onComplete,
   isCompleting,
 }) => {
+  const [sdkReady, setSdkReady] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
+
+  // Load the Facebook JS SDK
+  useEffect(() => {
+    // If already loaded
+    if (window.FB) {
+      setSdkReady(true);
+      return;
+    }
+
+    // Set up fbAsyncInit callback
+    window.fbAsyncInit = function () {
+      window.FB.init({
+        appId: embeddedConfig?.appId || '',
+        cookie: true,
+        xfbml: true,
+        version: 'v21.0',
+      });
+      setSdkReady(true);
+    };
+
+    // Check if script already exists
+    if (document.getElementById('facebook-jssdk')) {
+      // Script tag exists but FB not ready yet - wait
+      return;
+    }
+
+    // Inject the SDK script
+    const script = document.createElement('script');
+    script.id = 'facebook-jssdk';
+    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = 'anonymous';
+    script.onerror = () => {
+      setSdkError('Failed to load Facebook SDK. Please check your internet connection or ad-blocker.');
+    };
+    document.body.appendChild(script);
+  }, [embeddedConfig?.appId]);
+
+  // Re-init FB if appId changes after SDK is loaded
+  useEffect(() => {
+    if (sdkReady && window.FB && embeddedConfig?.appId) {
+      window.FB.init({
+        appId: embeddedConfig.appId,
+        cookie: true,
+        xfbml: true,
+        version: 'v21.0',
+      });
+    }
+  }, [sdkReady, embeddedConfig?.appId]);
+
   const handleFacebookLogin = useCallback(() => {
     if (!embeddedConfig) {
       onFetchConfig();
       return;
     }
 
-    const { appId, configId, redirectUri } = embeddedConfig;
+    if (!sdkReady || !window.FB) {
+      antMessage.error('Facebook SDK is not loaded yet. Please wait a moment and try again.');
+      return;
+    }
 
-    // Build the Facebook OAuth URL
-    const state = crypto.randomUUID();
-    const fbUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
-    fbUrl.searchParams.set('client_id', appId);
-    fbUrl.searchParams.set('redirect_uri', redirectUri);
-    fbUrl.searchParams.set('response_type', 'code');
-    fbUrl.searchParams.set('config_id', configId);
-    fbUrl.searchParams.set('state', state);
-    fbUrl.searchParams.set(
-      'scope',
-      'whatsapp_business_management,whatsapp_business_messaging',
-    );
+    // Use FB.login() which opens a managed popup — no redirect URI needed
+    const loginOptions: any = {
+      scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
+      extras: {
+        feature: 'whatsapp_embedded_signup',
+        setup: {},
+      },
+    };
 
-    // Open popup
-    const width = 600;
-    const height = 700;
-    const left = window.screenX + (window.innerWidth - width) / 2;
-    const top = window.screenY + (window.innerHeight - height) / 2;
-    const popup = window.open(
-      fbUrl.toString(),
-      'fb_wa_signup',
-      `width=${width},height=${height},left=${left},top=${top}`,
-    );
+    // If a config_id is set, include it
+    if (embeddedConfig.configId) {
+      loginOptions.config_id = embeddedConfig.configId;
+    }
 
-    // Listen for redirect back with code
-    const interval = setInterval(() => {
-      try {
-        if (!popup || popup.closed) {
-          clearInterval(interval);
-          return;
+    window.FB.login(
+      (response: any) => {
+        if (response.authResponse) {
+          // Got the code or access token
+          const code = response.authResponse.code;
+          const accessToken = response.authResponse.accessToken;
+
+          if (code) {
+            // Server-side flow: send the code to backend to exchange for long-lived token
+            onComplete({ code });
+          } else if (accessToken) {
+            // Client-side flow: send the short-lived token as code
+            onComplete({ code: accessToken });
+          } else {
+            antMessage.error('Facebook login succeeded but no authorization code was returned.');
+          }
+        } else {
+          // User cancelled
+          antMessage.info('Facebook login was cancelled.');
         }
-        const url = new URL(popup.location.href);
-        const code = url.searchParams.get('code');
-        if (code) {
-          clearInterval(interval);
-          popup.close();
-          onComplete({ code, state });
-        }
-      } catch {
-        // Cross-origin — keep waiting
-      }
-    }, 500);
-  }, [embeddedConfig, onFetchConfig, onComplete]);
+      },
+      loginOptions,
+    );
+  }, [embeddedConfig, onFetchConfig, onComplete, sdkReady]);
 
   return (
     <Card
@@ -106,6 +167,17 @@ const EmbeddedSignup: React.FC<EmbeddedSignupProps> = ({
           guided flow.
         </Text>
       </Space>
+
+      {sdkError && (
+        <Alert
+          type="error"
+          showIcon
+          icon={<WarningOutlined />}
+          message="Facebook SDK Error"
+          description={sdkError}
+          style={{ marginBottom: 16, borderRadius: 8 }}
+        />
+      )}
 
       <Alert
         type="success"
@@ -159,6 +231,7 @@ const EmbeddedSignup: React.FC<EmbeddedSignupProps> = ({
           size="large"
           icon={<FacebookOutlined />}
           loading={isFetchingConfig}
+          disabled={!!sdkError}
           onClick={handleFacebookLogin}
           block
           style={{
@@ -169,7 +242,7 @@ const EmbeddedSignup: React.FC<EmbeddedSignupProps> = ({
             borderColor: '#1877F2',
           }}
         >
-          Continue with Facebook
+          {sdkReady ? 'Continue with Facebook' : 'Loading Facebook SDK...'}
         </Button>
       )}
 
