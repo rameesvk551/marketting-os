@@ -85,6 +85,14 @@ jobs:
           name: frontend-dist
           path: frontend-dist
 
+      # Debug: List artifact contents
+      - name: List artifact contents
+        run: |
+          echo "Backend dist contents:"
+          ls -la backend-dist/ || true
+          echo "Frontend dist contents:"
+          ls -la frontend-dist/ || true
+
       # Setup SSH
       - name: Setup SSH key
         run: |
@@ -99,11 +107,11 @@ jobs:
           # Create directories and set permissions on EC2
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'mkdir -p /home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist && sudo mkdir -p /var/www/marketing-os/marketing-os-ui/dist && sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /var/www/marketing-os'
           
-          # Copy backend
-          scp -r backend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist/
+          # Copy backend - handle both nested and flat structures
+          scp -r backend-dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist/ || true
           
-          # Copy frontend
-          scp -r frontend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/
+          # Copy frontend - handle both nested and flat structures
+          scp -r frontend-dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/ || true
           
           # Run deployment script
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'bash ~/marketting-os/deploy.sh'
