@@ -112,19 +112,24 @@ jobs:
       - name: Prepare SSH key
         run: |
           mkdir -p ~/.ssh
-          cat > ~/.ssh/deploy_key << 'SSHKEY'
-          ${{ secrets.EC2_SSH_KEY }}
-          SSHKEY
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
+      - name: Debug artifacts
+        run: |
+          echo "Artifact structure:"
+          find artifacts/ -type f
+          ls -la artifacts/
+
       - name: Deploy to EC2
         run: |
-          # Copy artifacts to EC2
-          scp -i ~/.ssh/deploy_key -r artifacts/* ${{ env.DEPLOY_USER }}@${{ secrets.EC2_HOST }}:/tmp/
+          # Copy artifact tar files to EC2
+          scp -i ~/.ssh/deploy_key artifacts/backend-dist/backend-dist.tar.gz ${{ env.DEPLOY_USER }}@${{ secrets.EC2_HOST }}:/tmp/backend-dist.tar.gz
+          scp -i ~/.ssh/deploy_key artifacts/frontend-dist/frontend-dist.tar.gz ${{ env.DEPLOY_USER }}@${{ secrets.EC2_HOST }}:/tmp/frontend-dist.tar.gz
 
           # Execute deployment script
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+          ssh -T -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ env.DEPLOY_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
             set -e
 
             echo "🚀 Starting Marketing OS deployment..."
@@ -140,7 +145,7 @@ jobs:
             # Extract and deploy backend with atomic swap (zero-downtime)
             echo "🔧 Deploying backend..."
             mkdir -p /tmp/backend_extract
-            tar -xzf /tmp/backend-dist/backend-dist.tar.gz -C /tmp/backend_extract/
+            tar -xzf /tmp/backend-dist.tar.gz -C /tmp/backend_extract/
             
             # Atomic swap - zero-downtime deployment
             mkdir -p marketing-os-server/dist_backup
@@ -159,7 +164,7 @@ jobs:
             # Extract and deploy frontend with atomic swap (zero-downtime)
             echo "🎨 Deploying frontend with zero-downtime swap..."
             mkdir -p /tmp/frontend_extract
-            tar -xzf /tmp/frontend-dist/frontend-dist.tar.gz -C /tmp/frontend_extract/
+            tar -xzf /tmp/frontend-dist.tar.gz -C /tmp/frontend_extract/
             
             # Prepare new frontend directory
             sudo mkdir -p /var/www/marketing-os/marketing-os-ui
