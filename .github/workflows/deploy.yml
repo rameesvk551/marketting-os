@@ -53,18 +53,11 @@ jobs:
         working-directory: marketing-os-ui
         run: npm run build
 
-      # Upload artifacts
-      - name: Upload backend dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-dist
-          path: marketing-os-server/dist/
-
-      - name: Upload frontend dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: marketing-os-ui/dist/
+      - name: Verify builds were successful
+        run: |
+          test -f marketing-os-server/dist/server.js || exit 1
+          test -f marketing-os-ui/dist/index.html || exit 1
+          echo "✓ Both builds verified successfully"
 
   deploy:
     name: Deploy to EC2
@@ -73,26 +66,6 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Download backend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-dist
-          path: backend-dist
-
-      - name: Download frontend dist
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend-dist
-
-      # Debug: List artifact contents
-      - name: List artifact contents
-        run: |
-          echo "Backend dist contents:"
-          ls -la backend-dist/ || true
-          echo "Frontend dist contents:"
-          ls -la frontend-dist/ || true
-
       # Setup SSH
       - name: Setup SSH key
         run: |
@@ -110,13 +83,14 @@ jobs:
           # Pull latest code on EC2
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd ~/marketting-os && git pull origin production"
           
-          # Create backend dist directory and copy files
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/marketting-os/marketing-os-server/dist"
-          scp -r backend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/marketting-os/marketing-os-server/dist/
+          # Build backend on EC2
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd ~/marketting-os/marketing-os-server && npm ci && npm run build"
           
-          # Create and change frontend directory ownership
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo mkdir -p /var/www/marketing-os/marketing-os-ui/dist && sudo chown \$USER:\$USER /var/www/marketing-os -R"
-          scp -r frontend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/
+          # Build frontend on EC2
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd ~/marketting-os/marketing-os-ui && npm ci && npm run build"
+          
+          # Copy frontend to nginx directory
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo mkdir -p /var/www/marketing-os && sudo rm -rf /var/www/marketing-os/marketing-os-ui && sudo cp -r ~/marketting-os/marketing-os-ui /var/www/marketing-os/ && sudo chown -R nginx:nginx /var/www/marketing-os"
           
           # Make deploy script executable and run it
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "chmod +x ~/marketting-os/deploy.sh && bash ~/marketting-os/deploy.sh"
