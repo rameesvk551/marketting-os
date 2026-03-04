@@ -104,17 +104,22 @@ jobs:
       # Deploy to EC2
       - name: Deploy to EC2
         run: |
-          # Create directories and set permissions on EC2
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'mkdir -p /home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist && sudo mkdir -p /var/www/marketing-os/marketing-os-ui/dist && sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /var/www/marketing-os'
+          # Test SSH connection
+          ssh -o ConnectTimeout=5 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo '✓ SSH connection successful'"
           
-          # Copy backend - handle both nested and flat structures
-          scp -r backend-dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist/ || true
+          # Pull latest code on EC2
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cd ~/marketting-os && git pull origin production"
           
-          # Copy frontend - handle both nested and flat structures
-          scp -r frontend-dist/ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/ || true
+          # Create backend dist directory and copy files
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p ~/marketting-os/marketing-os-server/dist"
+          scp -r backend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/marketting-os/marketing-os-server/dist/
           
-          # Run deployment script
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'bash ~/marketting-os/deploy.sh'
+          # Create and change frontend directory ownership
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo mkdir -p /var/www/marketing-os/marketing-os-ui/dist && sudo chown \$USER:\$USER /var/www/marketing-os -R"
+          scp -r frontend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/
+          
+          # Make deploy script executable and run it
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "chmod +x ~/marketting-os/deploy.sh && bash ~/marketting-os/deploy.sh"
 
       - name: Deployment Status
         if: success()
