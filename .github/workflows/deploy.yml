@@ -1,0 +1,115 @@
+name: Build & Deploy to Production
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build Backend & Frontend
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # Backend Build
+      - name: Install backend dependencies
+        working-directory: marketing-os-server
+        run: npm ci
+
+      - name: Build backend
+        working-directory: marketing-os-server
+        run: npm run build
+
+      - name: Lint backend (optional)
+        working-directory: marketing-os-server
+        run: npm run lint
+        continue-on-error: true
+
+      # Frontend Build
+      - name: Install frontend dependencies
+        working-directory: marketing-os-ui
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: marketing-os-ui
+        run: npm run build
+
+      # Upload artifacts
+      - name: Upload backend dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-dist
+          path: marketing-os-server/dist/
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-dist
+          path: marketing-os-ui/dist/
+
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download backend dist
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-dist
+          path: backend-dist
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      # Setup SSH
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # Deploy to EC2
+      - name: Deploy to EC2
+        run: |
+          # Copy backend
+          scp -r backend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist/
+
+          # Copy frontend
+          scp -r frontend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/marketing-os/marketing-os-ui/dist/
+
+          # Run deployment script
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'bash ~/marketting-os/deploy.sh'
+
+      - name: Deployment Status
+        if: success()
+        run: echo "✅ Deployment successful!"
+
+      - name: Deployment Failed
+        if: failure()
+        run: echo "❌ Deployment failed!"
