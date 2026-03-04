@@ -96,9 +96,8 @@ jobs:
       # Deploy to EC2
       - name: Deploy to EC2
         run: |
-          # Create directories on EC2
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'mkdir -p /home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist'
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'mkdir -p /var/www/marketing-os/marketing-os-ui/dist'
+          # Create directories and set permissions on EC2
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} 'mkdir -p /home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist && sudo mkdir -p /var/www/marketing-os/marketing-os-ui/dist && sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /var/www/marketing-os'
           
           # Copy backend
           scp -r backend-dist/* ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/marketting-os/marketing-os-server/dist/
