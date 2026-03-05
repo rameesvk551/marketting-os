@@ -3,7 +3,7 @@
 
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
-import { config } from '@config/env.js';
+import { config } from '../config/env.js';
 
 let io: Server | null = null;
 
