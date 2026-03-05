@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Loader2, Briefcase, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BrandingPanel } from './register/BrandingPanel';
+import config from '../../config';
 
 function LoginPage() {
     const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ function LoginPage() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+            const response = await fetch(`${config.apiUrl}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),

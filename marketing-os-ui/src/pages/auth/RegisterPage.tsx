@@ -16,6 +16,7 @@ import { StepAdminInfo } from './register/StepAdminInfo';
 import { StepSecurity } from './register/StepSecurity';
 import { StepCompany } from './register/StepCompany';
 import { BrandingPanel } from './register/BrandingPanel';
+import config from '../../config';
 
 const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
@@ -71,7 +72,7 @@ const RegisterPage: React.FC = () => {
 
         try {
             // Direct fetch call for now since we haven't set up the api client fully in UI
-            const response = await fetch('http://localhost:5000/api/v1/auth/register', {
+            const response = await fetch(`${config.apiUrl}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

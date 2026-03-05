@@ -5,8 +5,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
+import config from '../../../config';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const SOCKET_URL = config.socketUrl;
 
 /**
  * Subscribe to real-time WhatsApp events.

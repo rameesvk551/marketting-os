@@ -1,0 +1,62 @@
+{
+  "local": {
+    "name": "Local Development",
+    "apiUrl": "http://localhost:8000/api/v1",
+    "socketUrl": "http://localhost:8000",
+    "ssoDomain": ".localhost",
+    "apps": {
+      "marketing-os": {
+        "url": "http://localhost:5173",
+        "name": "Marketing OS",
+        "description": "Marketing automation & growth operations",
+        "icon": "📈",
+        "requiredRoles": ["Owner", "Admin", "Manager", "Staff", "Viewer"]
+      }
+    }
+  },
+  "development": {
+    "name": "Development Server",
+    "apiUrl": "http://localhost:8000/api/v1",
+    "socketUrl": "http://localhost:8000",
+    "ssoDomain": ".localhost",
+    "apps": {
+      "marketing-os": {
+        "url": "http://localhost:5173",
+        "name": "Marketing OS",
+        "description": "Marketing automation & growth operations",
+        "icon": "📈",
+        "requiredRoles": ["Owner", "Admin", "Manager", "Staff", "Viewer"]
+      }
+    }
+  },
+  "staging": {
+    "name": "Staging Environment",
+    "apiUrl": "https://api.app.staging.wayon.in/api/v1",
+    "socketUrl": "https://api.app.staging.wayon.in",
+    "ssoDomain": ".staging.wayon.in",
+    "apps": {
+      "marketing-os": {
+        "url": "https://app.staging.wayon.in",
+        "name": "Marketing OS",
+        "description": "Marketing automation & growth operations",
+        "icon": "📈",
+        "requiredRoles": ["Owner", "Admin", "Manager", "Staff", "Viewer"]
+      }
+    }
+  },
+  "production": {
+    "name": "Production",
+    "apiUrl": "https://api.app.wayon.in/api/v1",
+    "socketUrl": "https://api.app.wayon.in",
+    "ssoDomain": ".wayon.in",
+    "apps": {
+      "marketing-os": {
+        "url": "https://app.wayon.in",
+        "name": "Marketing OS",
+        "description": "Marketing automation & growth operations",
+        "icon": "📈",
+        "requiredRoles": ["Owner", "Admin", "Manager", "Staff", "Viewer"]
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@ import { Table, Button, Space, Tag, Modal, message, Typography } from 'antd';
 import { PlusOutlined, CodeOutlined, EditOutlined, DeleteOutlined, WhatsAppOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { widgetApi } from '../../../api/widgets';
+import config from '../../../config';
 import type { IWidget } from '../../../api/widgets';
 import { useResponsive } from '../../../hooks/useResponsive';
 
@@ -53,13 +54,12 @@ const WidgetList: React.FC = () => {
 
     const handleShowCode = (widget: IWidget) => {
         const id = widget._id || widget.id;
-        // In production, this URL should come from env config
         const script = `
 <!-- MarketingOS WhatsApp Widget -->
 <script>
   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'widgetId':i});
   var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
-  j.async=true;j.src='http://localhost:4000/api/v1/growth/pixel.js?id='+i+dl;
+  j.async=true;j.src='${config.apiUrl}/growth/pixel.js?id='+i+dl;
   f.parentNode.insertBefore(j,f);
   })(window,document,'script','mosData','${id}');
 </script>

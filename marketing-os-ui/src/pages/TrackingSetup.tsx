@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { IntegrationCredentialStatus, IntegrationStatus, SyncCostsResponse } from '../api/growth';
 import { growthApi } from '../api/growth';
 import { useResponsive } from '../hooks/useResponsive';
+import config from '../config';
 
 const { Text, Paragraph } = Typography;
 const DEFAULT_SYNC_START_DATE = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -62,7 +63,7 @@ export default function TrackingSetup() {
         currency: 'USD',
     });
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const apiUrl = config.apiUrl;
     const queryClient = useQueryClient();
     const pixelScriptQuery = new URLSearchParams({
         tid: tenantId,

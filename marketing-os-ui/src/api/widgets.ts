@@ -1,4 +1,5 @@
 import client from './client';
+import config from '../config';
 
 export interface IWidgetAgent {
     name: string;
@@ -68,8 +69,7 @@ export const widgetApi = {
 
     // We might need a method to get script tag code?
     getScriptTag: (widgetId: string) => {
-        // TODO: Use env var for hosting URL
-        const scriptUrl = `http://localhost:4000/api/v1/growth/pixel.js?widgetId=${widgetId}`;
+        const scriptUrl = `${config.apiUrl}/growth/pixel.js?widgetId=${widgetId}`;
         return `<script src="${scriptUrl}" async></script>`;
     }
 };
