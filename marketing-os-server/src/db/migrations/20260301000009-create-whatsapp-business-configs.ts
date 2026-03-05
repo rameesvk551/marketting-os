@@ -1,11 +1,11 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
 export default {
     async up(queryInterface: QueryInterface) {
         await queryInterface.createTable('whatsapp_business_configs', {
             id: {
                 type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
+                defaultValue: Sequelize.literal('gen_random_uuid()'),
                 primaryKey: true,
                 allowNull: false,
             },
@@ -87,12 +87,12 @@ export default {
             created_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
-                defaultValue: DataTypes.NOW,
+                defaultValue: Sequelize.literal('NOW()'),
             },
             updated_at: {
                 type: DataTypes.DATE,
                 allowNull: false,
-                defaultValue: DataTypes.NOW,
+                defaultValue: Sequelize.literal('NOW()'),
             },
         });
     },

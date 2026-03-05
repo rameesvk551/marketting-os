@@ -1,9 +1,9 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
 export default {
     async up(queryInterface: QueryInterface) {
         await queryInterface.createTable('whatsapp_broadcasts', {
-            id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+            id: { type: DataTypes.UUID, defaultValue: Sequelize.literal('gen_random_uuid()'), primaryKey: true },
             tenant_id: { type: DataTypes.STRING, allowNull: false },
             template_name: { type: DataTypes.STRING, allowNull: false },
             language: { type: DataTypes.STRING, allowNull: false, defaultValue: 'en' },
@@ -18,8 +18,8 @@ export default {
             started_at: { type: DataTypes.DATE, allowNull: true },
             completed_at: { type: DataTypes.DATE, allowNull: true },
             created_by: { type: DataTypes.UUID, allowNull: false },
-            created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-            updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+            created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('NOW()') },
+            updated_at: { type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('NOW()') },
         });
 
         await queryInterface.addIndex('whatsapp_broadcasts', ['tenant_id']);

@@ -23,7 +23,9 @@ if (config.use_env_variable) {
 // Since top level await is supported in ESModules, we can dynamically load them asynchronously.
 const loadModels = async () => {
     const files = fs.readdirSync(__dirname).filter(file => {
-        return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.ts') && (!file.endsWith('.d.ts'));
+        if (file.indexOf('.') === 0 || file === basename) return false;
+        if (file.endsWith('.d.ts') || file.endsWith('.d.ts.map') || file.endsWith('.js.map')) return false;
+        return file.endsWith('.ts') || file.endsWith('.js');
     });
 
     for (const file of files) {

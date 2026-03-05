@@ -1,11 +1,11 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
 export default {
     async up(queryInterface: QueryInterface) {
         await queryInterface.createTable('whatsapp_templates', {
             id: {
                 type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
+                defaultValue: Sequelize.literal('gen_random_uuid()'),
                 primaryKey: true,
                 allowNull: false,
             },
@@ -32,6 +32,68 @@ export default {
             status: {
                 type: DataTypes.STRING,
                 defaultValue: 'draft',
+            },
+            language: {
+                type: DataTypes.STRING(10),
+                defaultValue: 'en',
+            },
+            header_type: {
+                type: DataTypes.STRING(50),
+                allowNull: true,
+            },
+            header_content: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            footer_content: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            components: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            variables: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            trigger_events: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            required_role: {
+                type: DataTypes.STRING(50),
+                allowNull: true,
+            },
+            submitted_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            approved_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            rejected_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            rejection_reason: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            created_by: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            created_at: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                defaultValue: Sequelize.literal('NOW()'),
+            },
+            updated_at: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                defaultValue: Sequelize.literal('NOW()'),
             },
         });
     },

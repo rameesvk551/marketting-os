@@ -1,11 +1,11 @@
-import { QueryInterface, DataTypes } from 'sequelize';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
 export default {
     async up(queryInterface: QueryInterface) {
         await queryInterface.createTable('whatsapp_conversations', {
             id: {
                 type: DataTypes.UUID,
-                defaultValue: DataTypes.UUIDV4,
+                defaultValue: Sequelize.literal('gen_random_uuid()'),
                 primaryKey: true,
                 allowNull: false,
             },
