@@ -45,6 +45,11 @@ const navItems: MenuItem[] = [
         label: 'Instagram',
     },
     {
+        key: '/catalog',
+        icon: <ShoppingCartOutlined />,
+        label: 'Catalog',
+    },
+    {
         type: 'divider',
     },
     {
