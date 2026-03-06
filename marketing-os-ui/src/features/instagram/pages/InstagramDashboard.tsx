@@ -20,7 +20,7 @@ const InstagramDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const { isMobile } = useResponsive();
     const {
-        token: { colorBgContainer, borderRadiusLG },
+        token: { colorBgContainer },
     } = theme.useToken();
 
     const tabLabelStyle = { fontSize: isMobile ? '13px' : '14px', fontWeight: 600 };

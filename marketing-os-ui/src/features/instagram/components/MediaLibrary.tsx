@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Tag, Row, Col, Empty, Button, Spin, Tooltip, Segmented } from 'antd';
+import { Card, Typography, Row, Col, Button, Spin, Space, Segmented } from 'antd';
 import {
     PictureOutlined,
     HeartOutlined,
@@ -13,7 +13,6 @@ import {
     PlayCircleOutlined,
     AppstoreOutlined,
     CloudSyncOutlined,
-    FilterOutlined,
     SyncOutlined,
 } from '@ant-design/icons';
 import { useInstagramAuth } from '../hooks/useInstagramAuth';

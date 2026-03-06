@@ -55,7 +55,6 @@ const InstagramAccountCard: React.FC = () => {
 
     // Fallback token input
     const [tokenInput, setTokenInput] = useState('');
-    const [showTokenFallback, setShowTokenFallback] = useState(false);
 
     // ── Load config & Facebook SDK ──
     useEffect(() => {

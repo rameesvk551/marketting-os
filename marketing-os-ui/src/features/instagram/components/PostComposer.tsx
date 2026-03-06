@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Input, Button, Typography, Space, Tag, Alert, Divider, Row, Col, Tooltip, Switch } from 'antd';
+import { Card, Input, Button, Typography, Space, Tag, Divider, Row, Col, Tooltip } from 'antd';
 import {
     SendOutlined,
     PictureOutlined,
@@ -8,12 +8,11 @@ import {
     FileImageOutlined,
     SmileOutlined,
     NumberOutlined,
-    BoldOutlined,
 } from '@ant-design/icons';
 import { useInstagramAuth } from '../hooks/useInstagramAuth';
 import { useContentPublish } from '../hooks/useContentPublish';
 
-const { Text, Title, Paragraph } = Typography;
+const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 const IG_GRADIENT = 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)';
