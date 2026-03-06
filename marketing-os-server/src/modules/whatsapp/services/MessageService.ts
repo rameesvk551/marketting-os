@@ -7,7 +7,7 @@ import { WhatsAppMessage } from '../models/index.js';
 export type EmitEventFn = (tenantId: string, conversationId: string, event: string, data: any) => void;
 
 /** No-op emitter used when sockets are not wired yet */
-const noopEmit: EmitEventFn = () => {};
+const noopEmit: EmitEventFn = () => { };
 
 export function createMessageService(
     messageRepo: any, channelFactory: any, conversationService: any, timelineService: any,
@@ -50,7 +50,7 @@ export function createMessageService(
         const saved = await messageRepo.save(message);
         await conversationService.recordActivity(context.id, dto.tenantId);
         await timelineService.recordWhatsAppMessage(saved, context, 'INBOUND');
-        try { const adapter = channelFactory.getAdapter(context.channel); await adapter.markAsRead(context, dto.providerMessageId); } catch (e) { console.warn('Failed to mark as read:', e); }
+        try { const adapter = channelFactory.getAdapter(context.channel, dto.tenantId); await adapter.markAsRead(context, dto.providerMessageId); } catch (e) { console.warn('Failed to mark as read:', e); }
         const suggestedActions = getSuggestedActions(context, message);
         const requiresHumanReview = requiresHuman(message);
 
@@ -87,7 +87,7 @@ export function createMessageService(
 
     async function sendText(dto: any) {
         const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
-        const adapter = channelFactory.getAdapter(context.channel);
+        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
         const providerMessageId = await adapter.sendMessage(context, dto.text, { replyToMessageId: dto.replyToMessageId });
         const message = WhatsAppMessage.create({
             tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
@@ -123,7 +123,7 @@ export function createMessageService(
 
     async function sendTemplate(dto: any) {
         const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
-        const adapter = channelFactory.getAdapter(context.channel);
+        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
         const providerMessageId = await adapter.sendTemplate(context, dto.templateName, dto.language || 'en', dto.variables);
         const message = WhatsAppMessage.create({
             tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
@@ -166,8 +166,8 @@ export function createMessageService(
     async function handleStatusUpdate(update: any) {
         const status = update.status === 'sent' ? 'SENT'
             : update.status === 'delivered' ? 'DELIVERED'
-            : update.status === 'read' ? 'READ'
-            : 'FAILED';
+                : update.status === 'read' ? 'READ'
+                    : 'FAILED';
 
         // Find the message by its provider-side ID
         const existing = await messageRepo.findByProviderMessageId(

@@ -170,23 +170,42 @@ export function createWhatsAppContainer(
   const metaService = createMetaService();
 
   // ============================================
-  // CHANNEL ADAPTERS
+  // CHANNEL ADAPTERS (tenant-aware)
   // ============================================
 
-  // Simple channel factory (inline stub)
+  // Default adapter using global provider (fallback)
+  const defaultWhatsAppAdapter = createWhatsAppAdapter(provider);
+
+  // Tenant-aware channel factory: resolves the correct provider per-tenant
   const channelFactory = {
-    adapters: new Map<string, any>(),
-    registerAdapter(channel: string, adapter: any) { this.adapters.set(channel, adapter); },
-    getAdapter(channel: string) {
-      const adapter = this.adapters.get(channel);
+    defaultAdapters: new Map<string, any>(),
+    registerAdapter(channel: string, adapter: any) { this.defaultAdapters.set(channel, adapter); },
+    getAdapter(channel: string, tenantId?: string) {
+      // When tenantId is provided for WhatsApp, create a tenant-specific adapter
+      // that uses the connected user's credentials from the DB
+      if (tenantId && channel === 'WHATSAPP') {
+        return {
+          async sendMessage(context: any, content: string, metadata?: any) {
+            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
+            return createWhatsAppAdapter(tenantProvider).sendMessage(context, content, metadata);
+          },
+          async sendTemplate(context: any, templateName: string, languageCode: string, variables: any) {
+            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
+            return createWhatsAppAdapter(tenantProvider).sendTemplate(context, templateName, languageCode, variables);
+          },
+          async markAsRead(context: any, messageId: string) {
+            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
+            return createWhatsAppAdapter(tenantProvider).markAsRead(context, messageId);
+          },
+        };
+      }
+      const adapter = this.defaultAdapters.get(channel);
       if (!adapter) throw new Error(`No adapter registered for channel: ${channel}`);
       return adapter;
     },
   };
 
-  // WhatsApp Adapter
-  const whatsAppAdapter = createWhatsAppAdapter(provider);
-  channelFactory.registerAdapter('WHATSAPP', whatsAppAdapter);
+  channelFactory.registerAdapter('WHATSAPP', defaultWhatsAppAdapter);
 
   // ============================================
   // APPLICATION SERVICES
