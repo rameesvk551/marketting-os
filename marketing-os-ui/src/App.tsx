@@ -4,6 +4,7 @@ import { ConfigProvider } from 'antd';
 import { AppLayout } from './components/layout/AppLayout';
 import { LeadsPage as CRMDashboard } from './features/crm';
 import { WhatsAppDashboard } from './features/whatsapp';
+import { InstagramDashboard } from './features/instagram';
 import { SettingsLayout } from './features/settings';
 import { ConfigureBusinessLayout } from './features/configure-business';
 
@@ -146,6 +147,7 @@ function App() {
                 <Route index element={<Navigate to="crm" replace />} />
                 <Route path="crm" element={<CRMDashboard />} />
                 <Route path="whatsapp" element={<WhatsAppDashboard />} />
+                <Route path="instagram" element={<InstagramDashboard />} />
                 <Route path="settings" element={<SettingsLayout />} />
                 <Route path="configure-business/*" element={<ConfigureBusinessLayout />} />
               </Route>

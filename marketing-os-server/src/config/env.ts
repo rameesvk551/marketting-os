@@ -67,6 +67,11 @@ export interface WhatsAppConfig {
 export interface InstagramConfig {
     accessToken: string;
     pageId: string;
+    appId: string;
+    appSecret: string;
+    verifyToken: string;
+    apiVersion: string;
+    igUserId: string;
 }
 
 export interface RedisConfig {
@@ -156,6 +161,11 @@ export const config: Config = {
     instagram: {
         accessToken: getEnvOrDefault('INSTAGRAM_ACCESS_TOKEN', ''),
         pageId: getEnvOrDefault('INSTAGRAM_PAGE_ID', ''),
+        appId: getEnvOrDefault('INSTAGRAM_APP_ID', process.env.META_APP_ID || ''),
+        appSecret: getEnvOrDefault('INSTAGRAM_APP_SECRET', process.env.META_APP_SECRET || ''),
+        verifyToken: getEnvOrDefault('INSTAGRAM_VERIFY_TOKEN', process.env.WHATSAPP_VERIFY_TOKEN || ''),
+        apiVersion: getEnvOrDefault('INSTAGRAM_API_VERSION', 'v21.0'),
+        igUserId: getEnvOrDefault('INSTAGRAM_USER_ID', ''),
     },
     mongo: {
         uri: getEnvOrDefault('MONGO_URI', 'mongodb://localhost:27018/marketing-os?directConnection=true'),

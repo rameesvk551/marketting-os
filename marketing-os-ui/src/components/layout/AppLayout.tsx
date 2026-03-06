@@ -10,6 +10,7 @@ import {
     SearchOutlined,
     TeamOutlined,
     WhatsAppOutlined,
+    InstagramOutlined,
     MenuOutlined,
     CloseOutlined,
     ShopOutlined,
@@ -37,6 +38,11 @@ const navItems: MenuItem[] = [
         key: '/whatsapp',
         icon: <WhatsAppOutlined />,
         label: 'WhatsApp',
+    },
+    {
+        key: '/instagram',
+        icon: <InstagramOutlined />,
+        label: 'Instagram',
     },
     {
         type: 'divider',

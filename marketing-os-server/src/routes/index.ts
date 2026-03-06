@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { createRouter as createWhatsAppRouter } from '../modules/whatsapp/whatsapp.router.js';
+import { createRouter as createInstagramRouter } from '../modules/instagram/instagram.router.js';
 import { createRouter as createSettingsRouter } from '../modules/settings/settings.router.js';
 import { createStoreRouter } from '../modules/store/store.router.js';
 
@@ -8,6 +9,7 @@ const router = Router();
 
 router.use('/auth', authRouter);
 router.use('/whatsapp', createWhatsAppRouter());
+router.use('/instagram', createInstagramRouter());
 router.use('/settings', createSettingsRouter());
 router.use('/store', createStoreRouter());
 

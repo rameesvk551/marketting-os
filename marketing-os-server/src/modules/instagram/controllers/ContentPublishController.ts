@@ -1,0 +1,133 @@
+// controllers/ContentPublishController.ts
+// Handles Instagram content publishing endpoints.
+
+import { Request, Response, NextFunction } from 'express';
+import { IContentPublishService } from '../services/ContentPublishService.js';
+
+export function createContentPublishController(publishService: IContentPublishService) {
+    return {
+        /**
+         * POST /instagram/publish — Publish a single image post
+         */
+        publishImage: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const { accountId, imageUrl, caption, altText } = req.body;
+
+                if (!accountId || !imageUrl) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'accountId and imageUrl are required',
+                    });
+                }
+
+                const media = await publishService.publishImage({
+                    tenantId,
+                    accountId,
+                    imageUrl,
+                    caption,
+                    altText,
+                });
+
+                res.json({ status: 'success', data: media });
+            } catch (error) {
+                next(error);
+            }
+        },
+
+        /**
+         * POST /instagram/publish/carousel — Publish a carousel post
+         */
+        publishCarousel: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const { accountId, items, caption } = req.body;
+
+                if (!accountId || !items || items.length < 2) {
+                    return res.status(400).json({
+                        status: 'error',
+                        message: 'accountId and at least 2 items are required',
+                    });
+                }
+
+                const media = await publishService.publishCarousel({
+                    tenantId,
+                    accountId,
+                    items,
+                    caption,
+                });
+
+                res.json({ status: 'success', data: media });
+            } catch (error) {
+                next(error);
+            }
+        },
+
+        /**
+         * GET /instagram/media — List published media
+         */
+        getMedia: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const { status, mediaType, limit, offset } = req.query;
+
+                const result = await publishService.getMedia(tenantId, {
+                    status: status as string,
+                    mediaType: mediaType as string,
+                    limit: limit ? parseInt(limit as string, 10) : undefined,
+                    offset: offset ? parseInt(offset as string, 10) : undefined,
+                });
+
+                res.json({ status: 'success', data: result });
+            } catch (error) {
+                next(error);
+            }
+        },
+
+        /**
+         * GET /instagram/media/:id — Get single media item
+         */
+        getMediaById: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const media = await publishService.getMediaById(req.params.id, tenantId);
+
+                if (!media) {
+                    return res.status(404).json({ status: 'error', message: 'Media not found' });
+                }
+
+                res.json({ status: 'success', data: media });
+            } catch (error) {
+                next(error);
+            }
+        },
+
+        /**
+         * GET /instagram/publishing-limit/:accountId — Check publishing rate limit
+         */
+        getPublishingLimit: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const limit = await publishService.getPublishingLimit(req.params.accountId, tenantId);
+
+                res.json({ status: 'success', data: limit });
+            } catch (error) {
+                next(error);
+            }
+        },
+
+        /**
+         * POST /instagram/media/sync/:accountId — Sync media from Instagram
+         */
+        syncMedia: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const synced = await publishService.syncMediaFromInstagram(req.params.accountId, tenantId);
+
+                res.json({ status: 'success', data: { synced } });
+            } catch (error) {
+                next(error);
+            }
+        },
+    };
+}
