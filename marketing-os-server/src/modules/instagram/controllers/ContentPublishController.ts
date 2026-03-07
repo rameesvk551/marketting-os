@@ -3,6 +3,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { IContentPublishService } from '../services/ContentPublishService.js';
+import { logger } from '../../../config/logger.js';
 
 export function createContentPublishController(publishService: IContentPublishService) {
     return {
@@ -108,11 +109,31 @@ export function createContentPublishController(publishService: IContentPublishSe
         getPublishingLimit: async (req: Request, res: Response, next: NextFunction) => {
             try {
                 const tenantId = (req as any).tenantId;
-                const limit = await publishService.getPublishingLimit(req.params.accountId, tenantId);
+                const { accountId } = req.params;
 
+                const limit = await publishService.getPublishingLimit(accountId, tenantId);
                 res.json({ status: 'success', data: limit });
-            } catch (error) {
-                next(error);
+            } catch (error: any) {
+                logger.error(`[IG Publish] getPublishingLimit error: ${error.message}`);
+                res.status(500).json({ status: 'error', message: error.message });
+            }
+        },
+
+        getOEmbed: async (req: Request, res: Response, next: NextFunction) => {
+            try {
+                const tenantId = (req as any).tenantId;
+                const { accountId } = req.params;
+                const { url } = req.query;
+
+                if (!url || typeof url !== 'string') {
+                    return res.status(400).json({ status: 'error', message: 'URL is required' });
+                }
+
+                const data = await publishService.getOEmbed(accountId, tenantId, url);
+                res.json({ status: 'success', data });
+            } catch (error: any) {
+                logger.error(`[IG Publish] getOEmbed error: ${error.message}`);
+                res.status(500).json({ status: 'error', message: error.message });
             }
         },
 
@@ -125,8 +146,9 @@ export function createContentPublishController(publishService: IContentPublishSe
                 const synced = await publishService.syncMediaFromInstagram(req.params.accountId, tenantId);
 
                 res.json({ status: 'success', data: { synced } });
-            } catch (error) {
-                next(error);
+            } catch (error: any) {
+                logger.error(`[IG Publish] syncMedia error: ${error.message}`);
+                res.status(500).json({ status: 'error', message: error.message });
             }
         },
     };

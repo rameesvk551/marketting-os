@@ -17,7 +17,7 @@ export function useInstagramAuth() {
     });
 
     const connectMutation = useMutation({
-        mutationFn: (payload: { accessToken?: string; code?: string; redirectUri?: string }) =>
+        mutationFn: (payload: { accessToken?: string; igUserId?: string; code?: string; redirectUri?: string }) =>
             accountService.connect(payload),
         onSuccess: () => {
             message.success('Instagram account connected successfully!');

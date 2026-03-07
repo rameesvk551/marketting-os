@@ -5,6 +5,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { createAccountController } from './controllers/AccountController.js';
 import { createContentPublishController } from './controllers/ContentPublishController.js';
 import { createInstagramWebhookController } from './controllers/WebhookController.js';
+import { createInboxController } from './controllers/InboxController.js';
+import { createAnalyticsController } from './controllers/AnalyticsController.js';
 
 /** Rate limiter — pass-through stub (implement with Redis in production) */
 const apiRateLimiter = (_req: Request, _res: Response, next: NextFunction) => next();
@@ -16,6 +18,8 @@ export function createInstagramRoutes(dependencies: {
     accountController: ReturnType<typeof createAccountController>;
     contentPublishController: ReturnType<typeof createContentPublishController>;
     webhookController: ReturnType<typeof createInstagramWebhookController>;
+    inboxController: ReturnType<typeof createInboxController>;
+    analyticsController: ReturnType<typeof createAnalyticsController>;
     authMiddleware: (req: any, res: any, next: any) => void;
     tenantMiddleware: (req: any, res: any, next: any) => void;
 }): Router {
@@ -24,6 +28,8 @@ export function createInstagramRoutes(dependencies: {
         accountController,
         contentPublishController,
         webhookController,
+        inboxController,
+        analyticsController,
         authMiddleware,
         tenantMiddleware,
     } = dependencies;
@@ -74,11 +80,25 @@ export function createInstagramRoutes(dependencies: {
     router.post('/publish', contentPublishController.publishImage);
     router.post('/publish/carousel', contentPublishController.publishCarousel);
 
-    // ── Media Library ──
+    // ── Media Library & Utilities ──
     router.get('/media', contentPublishController.getMedia);
     router.get('/media/:id', contentPublishController.getMediaById);
     router.get('/publishing-limit/:accountId', contentPublishController.getPublishingLimit);
     router.post('/media/sync/:accountId', contentPublishController.syncMedia);
+    router.get('/oembed/:accountId', contentPublishController.getOEmbed);
+
+    // ── Inbox (Comments & Messages) ──
+    router.get('/inbox/comments', inboxController.getComments);
+    router.post('/inbox/comments/:accountId/:commentId/reply', inboxController.replyToComment);
+    router.post('/inbox/comments/:accountId/:commentId/private-reply', inboxController.privateReplyToComment);
+    router.delete('/inbox/comments/:accountId/:commentId', inboxController.deleteComment);
+
+    router.get('/inbox/messages', inboxController.getMessages);
+    router.post('/inbox/messages/:accountId/send', inboxController.sendMessage);
+
+    // ── Analytics ──
+    router.get('/analytics/:accountId', analyticsController.getAccountInsights);
+    router.get('/analytics/:accountId/media', analyticsController.getMediaAnalytics);
 
     // ── Health Check ──
     router.get('/health', async (_req, res) => {

@@ -33,7 +33,11 @@ const IntegrationsSettingsPage: React.FC<IntegrationsSettingsPageProps> = ({
         <Text type="secondary">Connect third-party services.</Text>
       </Space>
 
-      <IntegrationsPanel onNavigateToWhatsApp={() => onNavigate('whatsapp')} />
+      <IntegrationsPanel
+        onNavigateToWhatsApp={() => onNavigate('whatsapp')}
+        onNavigateToInstagram={() => onNavigate('instagram')}
+        onNavigateToCatalog={() => onNavigate('catalog')}
+      />
     </div>
   );
 };

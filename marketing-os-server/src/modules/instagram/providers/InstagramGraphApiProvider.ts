@@ -63,10 +63,16 @@ export interface IInstagramGraphApiProvider {
     createMediaContainer(params: MediaContainerParams): Promise<string>;
     publishMedia(containerId: string): Promise<PublishResult>;
     getContainerStatus(containerId: string): Promise<ContainerStatusResponse>;
+    getOEmbed(url: string): Promise<any>;
     getPublishingLimit(): Promise<PublishingLimitResponse>;
     getUserProfile(): Promise<UserProfileResponse>;
+    getAccountInsights(metrics: string[], period: string): Promise<MediaInsight[]>;
     getMediaInsights(mediaId: string, metrics: string[]): Promise<MediaInsight[]>;
     getMedia(limit?: number): Promise<any>;
+    replyToComment(commentId: string, message: string): Promise<{ id: string }>;
+    deleteComment(commentId: string): Promise<{ success: boolean }>;
+    sendPrivateReply(commentId: string, message: string): Promise<{ id: string }>;
+    sendMessage(recipientId: string, text: string): Promise<{ message_id: string }>;
 }
 
 const GRAPH_API_BASE = 'https://graph.instagram.com';
@@ -160,12 +166,33 @@ export function createInstagramGraphApiProvider(config: InstagramApiConfig): IIn
         },
 
         /**
+         * Get oEmbed data for an Instagram URL
+         */
+        async getOEmbed(url: string): Promise<any> {
+            // oEmbed endpoint requires the url to be encoded
+            const data = await graphFetch(
+                `${baseUrl}/instagram_oembed?url=${encodeURIComponent(url)}`,
+            );
+            return data;
+        },
+
+        /**
          * Get Instagram user profile
          */
         async getUserProfile(): Promise<UserProfileResponse> {
             return graphFetch(
                 `${baseUrl}/${igUserId}?fields=id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,account_type`,
             );
+        },
+
+        /**
+         * Get insights for the Instagram account
+         */
+        async getAccountInsights(metrics: string[], period: string): Promise<MediaInsight[]> {
+            const data = await graphFetch(
+                `${baseUrl}/${igUserId}/insights?metric=${metrics.join(',')}&period=${period}`,
+            );
+            return data.data || [];
         },
 
         /**
@@ -185,6 +212,57 @@ export function createInstagramGraphApiProvider(config: InstagramApiConfig): IIn
             return graphFetch(
                 `${baseUrl}/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=${limit}`,
             );
+        },
+
+        /**
+         * Reply to a comment
+         */
+        async replyToComment(commentId: string, message: string): Promise<{ id: string }> {
+            const data = await graphFetch(
+                `${baseUrl}/${commentId}/replies?message=${encodeURIComponent(message)}`,
+                { method: 'POST' }
+            );
+            return { id: data.id };
+        },
+
+        /**
+         * Delete a comment
+         */
+        async deleteComment(commentId: string): Promise<{ success: boolean }> {
+            const data = await graphFetch(
+                `${baseUrl}/${commentId}`,
+                { method: 'DELETE' }
+            );
+            return { success: data.success };
+        },
+
+        /**
+         * Send a Private Reply to a comment via DM
+         */
+        async sendPrivateReply(commentId: string, message: string): Promise<{ id: string }> {
+            const data = await graphFetch(
+                `${baseUrl}/${commentId}/private_replies?message=${encodeURIComponent(message)}`,
+                { method: 'POST' }
+            );
+            return { id: data.id };
+        },
+
+        /**
+         * Send a Direct Message
+         */
+        async sendMessage(recipientId: string, text: string): Promise<{ message_id: string }> {
+            const body = {
+                recipient: { id: recipientId },
+                message: { text }
+            };
+            const data = await graphFetch(
+                `${baseUrl}/${igUserId}/messages`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                }
+            );
+            return { message_id: data.message_id };
         },
     };
 }

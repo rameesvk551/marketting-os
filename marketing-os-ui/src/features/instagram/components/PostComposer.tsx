@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Input, Button, Typography, Space, Tag, Divider, Row, Col, Tooltip } from 'antd';
+import { Card, Input, Button, Typography, Space, Tag, Divider, Row, Col, Tooltip, Radio } from 'antd';
 import {
     SendOutlined,
     PictureOutlined,
@@ -25,6 +25,7 @@ const PostComposer: React.FC = () => {
     const [imageUrl, setImageUrl] = useState('');
     const [caption, setCaption] = useState('');
     const [altText, setAltText] = useState('');
+    const [mediaType, setMediaType] = useState<'IMAGE' | 'STORIES'>('IMAGE');
 
     const handlePublish = () => {
         if (!accountId || !imageUrl) return;
@@ -33,6 +34,7 @@ const PostComposer: React.FC = () => {
             imageUrl,
             caption: caption || undefined,
             altText: altText || undefined,
+            mediaType,
         });
     };
 
@@ -87,6 +89,19 @@ const PostComposer: React.FC = () => {
                     </div>
 
                     <Space direction="vertical" style={{ width: '100%' }} size={20}>
+                        {/* Placement Section */}
+                        <div>
+                            <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>Placement</Text>
+                            <Radio.Group
+                                value={mediaType}
+                                onChange={e => setMediaType(e.target.value)}
+                                buttonStyle="solid"
+                            >
+                                <Radio.Button value="IMAGE">Post (Feed)</Radio.Button>
+                                <Radio.Button value="STORIES">Story</Radio.Button>
+                            </Radio.Group>
+                        </div>
+
                         {/* Image URL */}
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -111,60 +126,62 @@ const PostComposer: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Caption */}
-                        <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <Text strong style={{ fontSize: 13 }}>Caption</Text>
-                                <Text
-                                    type={captionLength > 2000 ? 'danger' : 'secondary'}
-                                    style={{ fontSize: 11, fontWeight: 500, fontFamily: 'monospace' }}
-                                >
-                                    {captionLength.toLocaleString()} / {maxCaption.toLocaleString()}
-                                </Text>
-                            </div>
-                            <TextArea
-                                placeholder="Write your caption here... Use #hashtags and @mentions for better reach ✨"
-                                value={caption}
-                                onChange={e => setCaption(e.target.value)}
-                                rows={6}
-                                maxLength={maxCaption}
-                                style={{
-                                    borderRadius: 12, resize: 'none',
-                                    border: '2px solid #e5e7eb',
-                                    fontSize: 14, lineHeight: 1.6,
-                                }}
-                                showCount={false}
-                            />
-                            {/* Character progress bar */}
-                            <div style={{
-                                height: 3, borderRadius: 2, background: '#f1f5f9', marginTop: 8,
-                                overflow: 'hidden',
-                            }}>
+                        {mediaType !== 'STORIES' && (
+                            /* Caption */
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <Text strong style={{ fontSize: 13 }}>Caption</Text>
+                                    <Text
+                                        type={captionLength > 2000 ? 'danger' : 'secondary'}
+                                        style={{ fontSize: 11, fontWeight: 500, fontFamily: 'monospace' }}
+                                    >
+                                        {captionLength.toLocaleString()} / {maxCaption.toLocaleString()}
+                                    </Text>
+                                </div>
+                                <TextArea
+                                    placeholder="Write your caption here... Use #hashtags and @mentions for better reach ✨"
+                                    value={caption}
+                                    onChange={e => setCaption(e.target.value)}
+                                    rows={6}
+                                    maxLength={maxCaption}
+                                    style={{
+                                        borderRadius: 12, resize: 'none',
+                                        border: '2px solid #e5e7eb',
+                                        fontSize: 14, lineHeight: 1.6,
+                                    }}
+                                    showCount={false}
+                                />
+                                {/* Character progress bar */}
                                 <div style={{
-                                    height: '100%', borderRadius: 2,
-                                    width: `${Math.min(captionProgress, 100)}%`,
-                                    background: captionProgress > 90 ? '#ef4444' : captionProgress > 70 ? '#f59e0b' : IG_GRADIENT,
-                                    transition: 'width 0.2s ease, background 0.2s ease',
-                                }} />
-                            </div>
+                                    height: 3, borderRadius: 2, background: '#f1f5f9', marginTop: 8,
+                                    overflow: 'hidden',
+                                }}>
+                                    <div style={{
+                                        height: '100%', borderRadius: 2,
+                                        width: `${Math.min(captionProgress, 100)}%`,
+                                        background: captionProgress > 90 ? '#ef4444' : captionProgress > 70 ? '#f59e0b' : IG_GRADIENT,
+                                        transition: 'width 0.2s ease, background 0.2s ease',
+                                    }} />
+                                </div>
 
-                            {/* Quick toolbar */}
-                            <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-                                {[
-                                    { icon: <SmileOutlined />, tip: 'Emoji' },
-                                    { icon: <NumberOutlined />, tip: 'Hashtag' },
-                                ].map((btn, i) => (
-                                    <Tooltip key={i} title={btn.tip}>
-                                        <Button
-                                            type="text"
-                                            icon={btn.icon}
-                                            size="small"
-                                            style={{ color: '#94a3b8', borderRadius: 8 }}
-                                        />
-                                    </Tooltip>
-                                ))}
+                                {/* Quick toolbar */}
+                                <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+                                    {[
+                                        { icon: <SmileOutlined />, tip: 'Emoji' },
+                                        { icon: <NumberOutlined />, tip: 'Hashtag' },
+                                    ].map((btn, i) => (
+                                        <Tooltip key={i} title={btn.tip}>
+                                            <Button
+                                                type="text"
+                                                icon={btn.icon}
+                                                size="small"
+                                                style={{ color: '#94a3b8', borderRadius: 8 }}
+                                            />
+                                        </Tooltip>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Alt Text */}
                         <div>

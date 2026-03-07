@@ -16,7 +16,10 @@ export function createAccountController(
          */
         getConnection: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) {
+                    return res.status(401).json({ status: 'error', message: 'Tenant required' });
+                }
                 const accounts = await accountRepo.findByTenant(tenantId);
 
                 res.json({
@@ -49,8 +52,11 @@ export function createAccountController(
          */
         connect: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
-                const { accessToken, code, redirectUri } = req.body;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) {
+                    return res.status(401).json({ status: 'error', message: 'Tenant required' });
+                }
+                const { accessToken, igUserId, code, redirectUri } = req.body;
 
                 let token = accessToken;
                 let userId: string | undefined;
@@ -67,7 +73,9 @@ export function createAccountController(
                 }
 
                 // Fetch the profile
-                const profile = await authService.getProfile(token);
+                // Do not pass igUserId if it is an IG Basic Display token (starts with IGAA)
+                const isIgToken = token.startsWith('IG');
+                const profile = await authService.getProfile(token, isIgToken ? undefined : igUserId);
 
                 // Save to DB
                 const account = await accountRepo.save({
@@ -109,7 +117,10 @@ export function createAccountController(
          */
         disconnect: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) {
+                    return res.status(401).json({ status: 'error', message: 'Tenant required' });
+                }
                 const { accountId } = req.params;
 
                 await accountRepo.delete(accountId, tenantId);
@@ -126,7 +137,10 @@ export function createAccountController(
          */
         getProfile: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) {
+                    return res.status(401).json({ status: 'error', message: 'Tenant required' });
+                }
                 const { accountId } = req.params;
 
                 const account = await accountRepo.findById(accountId, tenantId);
@@ -158,7 +172,10 @@ export function createAccountController(
          */
         refreshToken: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) {
+                    return res.status(401).json({ status: 'error', message: 'Tenant required' });
+                }
                 const { accountId } = req.params;
 
                 const account = await accountRepo.findById(accountId, tenantId);

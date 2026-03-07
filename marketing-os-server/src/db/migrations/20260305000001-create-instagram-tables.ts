@@ -1,7 +1,8 @@
-import { Pool } from 'pg';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
-export async function up(pool: Pool): Promise<void> {
-    await pool.query(`
+export default {
+    async up(queryInterface: QueryInterface) {
+        await queryInterface.sequelize.query(`
         -- ── Instagram Accounts ──
         CREATE TABLE IF NOT EXISTS instagram_accounts (
             id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,11 +64,12 @@ export async function up(pool: Pool): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_ig_media_type ON instagram_media(media_type);
         CREATE INDEX IF NOT EXISTS idx_ig_media_published ON instagram_media(published_at DESC);
     `);
-}
+    },
 
-export async function down(pool: Pool): Promise<void> {
-    await pool.query(`
+    async down(queryInterface: QueryInterface) {
+        await queryInterface.sequelize.query(`
         DROP TABLE IF EXISTS instagram_media CASCADE;
         DROP TABLE IF EXISTS instagram_accounts CASCADE;
     `);
-}
+    }
+};

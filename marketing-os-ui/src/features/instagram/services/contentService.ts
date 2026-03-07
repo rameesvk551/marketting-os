@@ -4,7 +4,7 @@
 import { instagramApi } from '../api/instagramApi';
 
 export const contentService = {
-    publishImage: (payload: { accountId: string; imageUrl: string; caption?: string; altText?: string }) =>
+    publishImage: (payload: { accountId: string; imageUrl: string; caption?: string; altText?: string; mediaType?: 'IMAGE' | 'STORIES' }) =>
         instagramApi.publishImage(payload),
 
     publishCarousel: (payload: { accountId: string; items: Array<{ imageUrl?: string; videoUrl?: string; altText?: string }>; caption?: string }) =>

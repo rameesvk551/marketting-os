@@ -8,6 +8,8 @@ import { getConfig } from '../../config/index.js';
 // Repositories
 import { createInstagramAccountRepo, type IInstagramAccountRepo } from './repositories/InstagramAccountRepo.js';
 import { createInstagramMediaRepo, type IInstagramMediaRepo } from './repositories/InstagramMediaRepo.js';
+import { createInstagramCommentRepo, type IInstagramCommentRepo } from './repositories/InstagramCommentRepo.js';
+import { createInstagramMessageRepo, type IInstagramMessageRepo } from './repositories/InstagramMessageRepo.js';
 
 // Provider
 import { createInstagramGraphApiProvider, type IInstagramGraphApiProvider } from './providers/InstagramGraphApiProvider.js';
@@ -16,11 +18,15 @@ import { createInstagramGraphApiProvider, type IInstagramGraphApiProvider } from
 import { createInstagramAuthService, type IInstagramAuthService } from './services/InstagramAuthService.js';
 import { createContentPublishService, type IContentPublishService } from './services/ContentPublishService.js';
 import { createWebhookService, type IWebhookService } from './services/WebhookService.js';
+import { createInboxService, type IInboxService } from './services/InboxService.js';
+import { createAnalyticsService, type IAnalyticsService } from './services/AnalyticsService.js';
 
 // Controllers
 import { createAccountController } from './controllers/AccountController.js';
 import { createContentPublishController } from './controllers/ContentPublishController.js';
 import { createInstagramWebhookController } from './controllers/WebhookController.js';
+import { createInboxController } from './controllers/InboxController.js';
+import { createAnalyticsController } from './controllers/AnalyticsController.js';
 
 /**
  * Instagram container - holds all Instagram-related dependencies
@@ -29,16 +35,22 @@ export interface InstagramContainer {
     // Repositories
     accountRepo: IInstagramAccountRepo;
     mediaRepo: IInstagramMediaRepo;
+    commentRepo: IInstagramCommentRepo;
+    messageRepo: IInstagramMessageRepo;
 
     // Services
     authService: IInstagramAuthService;
     publishService: IContentPublishService;
     webhookService: IWebhookService;
+    inboxService: IInboxService;
+    analyticsService: IAnalyticsService;
 
     // Controllers
     accountController: ReturnType<typeof createAccountController>;
     contentPublishController: ReturnType<typeof createContentPublishController>;
     webhookController: ReturnType<typeof createInstagramWebhookController>;
+    inboxController: ReturnType<typeof createInboxController>;
+    analyticsController: ReturnType<typeof createAnalyticsController>;
 
     // Provider factory
     createProvider: (accessToken: string, igUserId: string) => IInstagramGraphApiProvider;
@@ -59,6 +71,8 @@ export function createInstagramContainer(pool: Pool): InstagramContainer {
     // ── Repositories ──
     const accountRepo = createInstagramAccountRepo(pool);
     const mediaRepo = createInstagramMediaRepo(pool);
+    const commentRepo = createInstagramCommentRepo(pool);
+    const messageRepo = createInstagramMessageRepo(pool);
 
     // ── Provider factory (per-account, since each tenant has their own token) ──
     const createProvider = (accessToken: string, igUserId: string): IInstagramGraphApiProvider => {
@@ -72,22 +86,32 @@ export function createInstagramContainer(pool: Pool): InstagramContainer {
     // ── Services ──
     const authService = createInstagramAuthService(appId, appSecret, apiVersion);
     const publishService = createContentPublishService(mediaRepo, accountRepo, createProvider);
-    const webhookService = createWebhookService();
+    const webhookService = createWebhookService(accountRepo, mediaRepo, commentRepo, messageRepo);
+    const inboxService = createInboxService(commentRepo, messageRepo, accountRepo, createProvider);
+    const analyticsService = createAnalyticsService(accountRepo, mediaRepo, createProvider);
 
     // ── Controllers ──
     const accountController = createAccountController(authService, accountRepo);
     const contentPublishController = createContentPublishController(publishService);
     const webhookController = createInstagramWebhookController(webhookService, verifyToken);
+    const inboxController = createInboxController(inboxService);
+    const analyticsController = createAnalyticsController(analyticsService);
 
     return {
         accountRepo,
         mediaRepo,
+        commentRepo,
+        messageRepo,
         authService,
         publishService,
         webhookService,
+        inboxService,
+        analyticsService,
         accountController,
         contentPublishController,
         webhookController,
+        inboxController,
+        analyticsController,
         createProvider,
     };
 }

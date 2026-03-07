@@ -13,6 +13,7 @@ export interface PublishImageInput {
     imageUrl: string;
     caption?: string;
     altText?: string;
+    mediaType?: MediaType | 'STORIES'; // Support STORIES explicitly
 }
 
 export interface PublishCarouselInput {
@@ -28,6 +29,7 @@ export interface IContentPublishService {
     getPublishingLimit(accountId: string, tenantId: string): Promise<{ used: number; total: number; remaining: number }>;
     getMedia(tenantId: string, filters?: { status?: string; mediaType?: string; limit?: number; offset?: number }): Promise<{ items: InstagramMedia[]; total: number }>;
     getMediaById(id: string, tenantId: string): Promise<InstagramMedia | null>;
+    getOEmbed(accountId: string, tenantId: string, url: string): Promise<any>;
     syncMediaFromInstagram(accountId: string, tenantId: string): Promise<number>;
 }
 
@@ -66,11 +68,13 @@ export function createContentPublishService(
         async publishImage(input: PublishImageInput): Promise<InstagramMedia> {
             const { provider } = await getProviderForAccount(input.accountId, input.tenantId);
 
+            const resolvedMediaType = input.mediaType || 'IMAGE';
+
             // Save pending record
             const media = await mediaRepo.save({
                 tenantId: input.tenantId,
                 accountId: input.accountId,
-                mediaType: 'IMAGE' as MediaType,
+                mediaType: resolvedMediaType as MediaType,
                 caption: input.caption,
                 altText: input.altText,
                 mediaUrl: input.imageUrl,
@@ -78,8 +82,9 @@ export function createContentPublishService(
 
             try {
                 // Step 1: Create container
-                logger.info(`[Instagram Publish] Creating container for image: ${input.imageUrl}`);
+                logger.info(`[Instagram Publish] Creating container for image/story: ${input.imageUrl}`);
                 const containerId = await provider.createMediaContainer({
+                    media_type: resolvedMediaType === 'STORIES' ? 'STORIES' : 'IMAGE',
                     image_url: input.imageUrl,
                     caption: input.caption,
                     alt_text: input.altText,
@@ -197,6 +202,14 @@ export function createContentPublishService(
          */
         async getMediaById(id, tenantId) {
             return mediaRepo.findById(id, tenantId);
+        },
+
+        /**
+         * Get oEmbed data
+         */
+        async getOEmbed(accountId: string, tenantId: string, url: string): Promise<any> {
+            const { provider } = await getProviderForAccount(accountId, tenantId);
+            return provider.getOEmbed(url);
         },
 
         /**

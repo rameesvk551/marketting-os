@@ -22,6 +22,8 @@ export interface WhatsAppManualConfig {
   webhookUrl?: string;
   displayPhoneNumber?: string;
   businessName?: string;
+  instagramAccountId?: string;
+  catalogId?: string;
 }
 
 /** Payload returned by the embedded signup flow */
@@ -40,6 +42,8 @@ export interface WhatsAppConnection {
   phoneNumberId: string | null;
   displayPhoneNumber: string | null;
   businessName: string | null;
+  instagramAccountId: string | null;
+  catalogId: string | null;
   accessTokenLast4: string | null; // only last 4 chars for security
   webhookUrl: string | null;
   verifyToken: string | null;
@@ -118,4 +122,6 @@ export type SettingsSection =
   | 'integrations'
   | 'api-keys'
   | 'billing'
+  | 'instagram'
+  | 'catalog'
   | 'team';

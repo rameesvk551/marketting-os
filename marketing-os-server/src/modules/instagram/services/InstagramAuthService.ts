@@ -9,7 +9,7 @@ export interface IInstagramAuthService {
     exchangeCodeForShortLivedToken(code: string, redirectUri: string): Promise<{ accessToken: string; userId: string }>;
     exchangeForLongLivedToken(shortLivedToken: string): Promise<{ accessToken: string; expiresIn: number }>;
     refreshLongLivedToken(token: string): Promise<{ accessToken: string; expiresIn: number }>;
-    getProfile(accessToken: string): Promise<InstagramProfileData>;
+    getProfile(accessToken: string, igUserId?: string): Promise<InstagramProfileData>;
 }
 
 export interface InstagramProfileData {
@@ -94,11 +94,15 @@ export function createInstagramAuthService(appId: string, appSecret: string, api
             };
         },
 
-        async getProfile(accessToken: string): Promise<InstagramProfileData> {
-            const fields = 'id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,account_type';
-            const response = await fetch(
-                `${GRAPH_API_BASE}/${apiVersion}/me?fields=${fields}&access_token=${accessToken}`,
-            );
+        async getProfile(accessToken: string, igUserId?: string): Promise<InstagramProfileData> {
+            const fbFields = 'id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count';
+            const igFields = 'id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,account_type';
+
+            const url = igUserId
+                ? `https://graph.facebook.com/${apiVersion}/${igUserId}?fields=${fbFields}&access_token=${accessToken}`
+                : `${GRAPH_API_BASE}/${apiVersion}/me?fields=${igFields}&access_token=${accessToken}`;
+
+            const response = await fetch(url);
             const data: any = await response.json();
 
             if (!response.ok) {

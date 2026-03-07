@@ -1,7 +1,8 @@
-import { Pool } from 'pg';
+import { QueryInterface, DataTypes, Sequelize } from 'sequelize';
 
-export async function up(pool: Pool): Promise<void> {
-    await pool.query(`
+export default {
+    async up(queryInterface: QueryInterface) {
+        await queryInterface.sequelize.query(`
         -- ── Catalog Configs — stores per-tenant Meta Catalog connection ──
         CREATE TABLE IF NOT EXISTS catalog_configs (
             id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,11 +45,12 @@ export async function up(pool: Pool): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_catalog_sync_logs_status
             ON catalog_sync_logs (status);
     `);
-}
+    },
 
-export async function down(pool: Pool): Promise<void> {
-    await pool.query(`
+    async down(queryInterface: QueryInterface) {
+        await queryInterface.sequelize.query(`
         DROP TABLE IF EXISTS catalog_sync_logs;
         DROP TABLE IF EXISTS catalog_configs;
     `);
-}
+    }
+};

@@ -17,6 +17,8 @@ import {
   ApiKeysSettingsPage,
   BillingSettingsPage,
   TeamSettingsPage,
+  InstagramSettingsPage,
+  CatalogSettingsPage,
 } from './pages';
 import type { SettingsSection } from './types';
 
@@ -48,6 +50,10 @@ const SettingsLayout: React.FC = () => {
         return <BillingSettingsPage />;
       case 'team':
         return <TeamSettingsPage />;
+      case 'instagram':
+        return <InstagramSettingsPage />;
+      case 'catalog':
+        return <CatalogSettingsPage />;
       default:
         return <GeneralSettingsPage />;
     }

@@ -6,6 +6,7 @@ import { Card, Typography, Row, Col, Tag, Button, Space } from 'antd';
 import {
   ApiOutlined,
   WhatsAppOutlined,
+  InstagramOutlined,
   MailOutlined,
   GoogleOutlined,
   ShopOutlined,
@@ -31,6 +32,22 @@ const integrations: Integration[] = [
     icon: <WhatsAppOutlined style={{ fontSize: 28 }} />,
     status: 'available',
     color: '#25D366',
+  },
+  {
+    key: 'instagram',
+    name: 'Instagram Integration',
+    description: 'Connect your Instagram account to manage DMs, comments, and schedule posts.',
+    icon: <InstagramOutlined style={{ fontSize: 28 }} />,
+    status: 'available',
+    color: '#E1306C',
+  },
+  {
+    key: 'catalog',
+    name: 'Meta Product Catalog',
+    description: 'Sync your products to Meta for Instagram Shopping and WhatsApp Commerce.',
+    icon: <ShopOutlined style={{ fontSize: 28 }} />,
+    status: 'available',
+    color: '#4F46E5',
   },
   {
     key: 'email',
@@ -68,10 +85,14 @@ const integrations: Integration[] = [
 
 interface IntegrationsPanelProps {
   onNavigateToWhatsApp: () => void;
+  onNavigateToInstagram: () => void;
+  onNavigateToCatalog: () => void;
 }
 
 const IntegrationsPanel: React.FC<IntegrationsPanelProps> = ({
   onNavigateToWhatsApp,
+  onNavigateToInstagram,
+  onNavigateToCatalog,
 }) => {
   const statusTag = (status: Integration['status']) => {
     switch (status) {
@@ -130,11 +151,15 @@ const IntegrationsPanel: React.FC<IntegrationsPanelProps> = ({
                     {intg.description}
                   </Paragraph>
                 </div>
-                {intg.key === 'whatsapp' && intg.status === 'available' && (
+                {intg.status === 'available' && (
                   <Button
                     type="primary"
                     size="small"
-                    onClick={onNavigateToWhatsApp}
+                    onClick={() => {
+                      if (intg.key === 'whatsapp') onNavigateToWhatsApp();
+                      if (intg.key === 'instagram') onNavigateToInstagram();
+                      if (intg.key === 'catalog') onNavigateToCatalog();
+                    }}
                     style={{ background: intg.color, borderColor: intg.color }}
                   >
                     Configure

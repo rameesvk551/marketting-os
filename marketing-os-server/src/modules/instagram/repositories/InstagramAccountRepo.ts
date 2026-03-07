@@ -13,6 +13,7 @@ export interface IInstagramAccountRepo {
     findByTenant(tenantId: string): Promise<InstagramAccount[]>;
     findById(id: string, tenantId: string): Promise<InstagramAccount | null>;
     findByIgUserId(igUserId: string, tenantId: string): Promise<InstagramAccount | null>;
+    findByIgUserIdGlobal(igUserId: string): Promise<InstagramAccount[]>;
     save(input: CreateInstagramAccountInput): Promise<InstagramAccount>;
     updateToken(id: string, accessToken: string, expiresAt?: Date): Promise<void>;
     updateProfile(id: string, updates: Partial<Pick<InstagramAccount, 'username' | 'name' | 'profilePictureUrl' | 'biography' | 'followersCount' | 'followsCount' | 'mediaCount'>>): Promise<void>;
@@ -44,6 +45,14 @@ export function createInstagramAccountRepo(pool: Pool): IInstagramAccountRepo {
                 [igUserId, tenantId],
             );
             return rows[0] ? mapRowToAccount(rows[0]) : null;
+        },
+
+        async findByIgUserIdGlobal(igUserId: string): Promise<InstagramAccount[]> {
+            const { rows } = await pool.query<InstagramAccountRow>(
+                `SELECT * FROM instagram_accounts WHERE ig_user_id = $1`,
+                [igUserId],
+            );
+            return rows.map(mapRowToAccount);
         },
 
         async save(input: CreateInstagramAccountInput): Promise<InstagramAccount> {

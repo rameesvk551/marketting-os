@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Avatar, Button, Tag, Typography, Row, Col, Tooltip, Progress, Spin, Input, Collapse, message as antMessage } from 'antd';
+import React, { useState } from 'react';
+import { Card, Avatar, Button, Tag, Typography, Row, Col, Tooltip, Progress, Input, message as antMessage } from 'antd';
 import {
     InstagramOutlined,
     UserOutlined,
@@ -13,23 +13,13 @@ import {
     RiseOutlined,
     SafetyCertificateOutlined,
     ApiOutlined,
-    FacebookOutlined,
-    LoadingOutlined,
     ThunderboltOutlined,
-    KeyOutlined,
 } from '@ant-design/icons';
 import { useInstagramAuth } from '../hooks/useInstagramAuth';
-import { instagramApi } from '../api/instagramApi';
 
 const { Text, Title, Paragraph } = Typography;
 
-// Extend Window for FB SDK
-declare global {
-    interface Window {
-        FB: any;
-        fbAsyncInit: () => void;
-    }
-}
+
 
 /* ── Instagram gradient palette ── */
 const IG_GRADIENT = 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)';
@@ -47,111 +37,19 @@ const InstagramAccountCard: React.FC = () => {
         refreshToken,
     } = useInstagramAuth();
 
-    // Facebook SDK state
-    const [sdkReady, setSdkReady] = useState(false);
-    const [sdkLoading, setSdkLoading] = useState(true);
-    const [appConfig, setAppConfig] = useState<any>(null);
-    const [fbLoginPending, setFbLoginPending] = useState(false);
-
-    // Fallback token input
+    // Manual form state
     const [tokenInput, setTokenInput] = useState('');
+    const [igUserIdInput, setIgUserIdInput] = useState('');
 
-    // ── Load config & Facebook SDK ──
-    useEffect(() => {
-        loadConfig();
-    }, []);
-
-    const loadConfig = async () => {
-        try {
-            const response = await instagramApi.getConfig();
-            const data = response.data;
-            if (data?.appId) {
-                setAppConfig(data);
-                loadFacebookSDK(data.appId, data.apiVersion || 'v21.0');
-            } else {
-                setSdkLoading(false);
-            }
-        } catch (err) {
-            console.error('[Instagram] Failed to load config:', err);
-            setSdkLoading(false);
-        }
-    };
-
-    const loadFacebookSDK = (appId: string, apiVersion: string) => {
-        // If already loaded
-        if (window.FB) {
-            window.FB.init({ appId, cookie: true, xfbml: true, version: apiVersion });
-            setSdkReady(true);
-            setSdkLoading(false);
+    // ── Manual connect handler ──
+    const handleConnect = () => {
+        if (!tokenInput.trim() || !igUserIdInput.trim()) {
+            antMessage.warning('Please provide both Account ID and Access Token');
             return;
         }
-
-        // Set up async init
-        window.fbAsyncInit = function () {
-            window.FB.init({ appId, cookie: true, xfbml: true, version: apiVersion });
-            setSdkReady(true);
-            setSdkLoading(false);
-        };
-
-        // Don't double-inject the script
-        if (document.getElementById('facebook-jssdk')) {
-            setSdkLoading(false);
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.id = 'facebook-jssdk';
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = 'anonymous';
-        script.onerror = () => {
-            setSdkLoading(false);
-            antMessage.error('Failed to load Facebook SDK. Check your internet or ad-blocker.');
-        };
-        document.body.appendChild(script);
-    };
-
-    // ── Embedded Signup handler ──
-    const handleFacebookLogin = useCallback(() => {
-        if (!sdkReady || !window.FB) {
-            antMessage.error('Facebook SDK is not ready. Please wait a moment.');
-            return;
-        }
-
-        setFbLoginPending(true);
-
-        const loginOptions: any = {
-            scope: 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_comments,instagram_business_manage_messages',
-        };
-
-        // NOTE: Do NOT pass config_id for Instagram.
-        // config_id triggers Meta's Embedded Signup flow (BSP/TP only).
-        // Instagram uses standard Facebook Login with permissions above.
-
-        window.FB.login(
-            async (response: any) => {
-                if (response.authResponse) {
-                    const accessToken = response.authResponse.accessToken;
-                    if (accessToken) {
-                        connect({ accessToken });
-                    } else {
-                        antMessage.error('Login succeeded but no access token was returned.');
-                    }
-                } else {
-                    antMessage.info('Instagram login was cancelled.');
-                }
-                setFbLoginPending(false);
-            },
-            loginOptions,
-        );
-    }, [sdkReady, appConfig, connect]);
-
-    // ── Manual token connect ──
-    const handleManualConnect = () => {
-        if (!tokenInput.trim()) return;
-        connect({ accessToken: tokenInput.trim() });
+        connect({ accessToken: tokenInput.trim(), igUserId: igUserIdInput.trim() });
         setTokenInput('');
+        setIgUserIdInput('');
     };
 
     if (isLoading) {
@@ -338,72 +236,42 @@ const InstagramAccountCard: React.FC = () => {
                         ))}
                     </Row>
 
-                    {/* ── Primary: Facebook Login Button ── */}
-                    {sdkLoading ? (
-                        <div style={{ padding: '20px 0' }}>
-                            <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-                            <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 13 }}>Loading Facebook SDK...</Text>
-                        </div>
-                    ) : (
+                    {/* ── Manual Configuration Form ── */}
+                    <div style={{ textAlign: 'left', marginTop: 24 }}>
+                        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>Instagram Account ID</Typography.Text>
+                        <Input
+                            placeholder="e.g. 178414000000000"
+                            value={igUserIdInput}
+                            onChange={(e) => setIgUserIdInput(e.target.value)}
+                            prefix={<InstagramOutlined style={{ color: '#94a3b8' }} />}
+                            style={{ borderRadius: 12, marginBottom: 20, height: 42, fontSize: 14 }}
+                        />
+
+                        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>Permanent Access Token</Typography.Text>
+                        <Input.TextArea
+                            placeholder="Paste your long-lived or permanent Page Access Token here..."
+                            value={tokenInput}
+                            onChange={(e) => setTokenInput(e.target.value)}
+                            rows={3}
+                            style={{ borderRadius: 12, marginBottom: 24, resize: 'none', fontSize: 14 }}
+                        />
+
                         <Button
                             type="primary"
-                            icon={fbLoginPending ? <LoadingOutlined /> : <FacebookOutlined />}
-                            size="large"
+                            icon={<LinkOutlined />}
                             block
-                            onClick={handleFacebookLogin}
-                            loading={isConnecting || fbLoginPending}
-                            disabled={!sdkReady}
+                            size="large"
+                            onClick={handleConnect}
+                            loading={isConnecting}
+                            disabled={!tokenInput.trim() || !igUserIdInput.trim()}
                             style={{
-                                borderRadius: 14, height: 54, fontWeight: 700, fontSize: 15,
-                                background: sdkReady ? '#1877F2' : undefined,
+                                borderRadius: 14, height: 50, fontWeight: 600, fontSize: 15,
+                                background: IG_GRADIENT,
                                 border: 'none',
-                                boxShadow: sdkReady ? '0 4px 20px rgba(24,119,242,0.35)' : undefined,
-                                letterSpacing: '0.2px',
                             }}
                         >
-                            {fbLoginPending ? 'Connecting...' : sdkReady ? 'Continue with Facebook' : 'SDK Loading...'}
+                            Connect Account
                         </Button>
-                    )}
-
-                    <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12, lineHeight: 1.5 }}>
-                        You'll be redirected to Meta to authorize your Instagram Business account.
-                        <br />No password is shared with us.
-                    </Text>
-
-                    {/* ── Secondary: Manual Token Input (fallback) ── */}
-                    <div style={{ marginTop: 24 }}>
-                        <Collapse
-                            ghost
-                            items={[{
-                                key: 'manual',
-                                label: (
-                                    <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>
-                                        <KeyOutlined /> Advanced: Connect with access token
-                                    </span>
-                                ),
-                                children: (
-                                    <div style={{ textAlign: 'left' }}>
-                                        <Input.TextArea
-                                            placeholder="Paste your Instagram access token here..."
-                                            value={tokenInput}
-                                            onChange={e => setTokenInput(e.target.value)}
-                                            rows={3}
-                                            style={{ borderRadius: 12, marginBottom: 12, resize: 'none', border: '2px solid #e5e7eb', fontSize: 13 }}
-                                        />
-                                        <Button
-                                            icon={<LinkOutlined />}
-                                            block
-                                            onClick={handleManualConnect}
-                                            loading={isConnecting}
-                                            disabled={!tokenInput.trim()}
-                                            style={{ borderRadius: 12, height: 42, fontWeight: 600 }}
-                                        >
-                                            Connect with Token
-                                        </Button>
-                                    </div>
-                                ),
-                            }]}
-                        />
                     </div>
                 </div>
             </Card>

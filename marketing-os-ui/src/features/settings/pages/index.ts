@@ -6,3 +6,5 @@ export { default as IntegrationsSettingsPage } from './IntegrationsSettingsPage'
 export { default as ApiKeysSettingsPage } from './ApiKeysSettingsPage';
 export { default as BillingSettingsPage } from './BillingSettingsPage';
 export { default as TeamSettingsPage } from './TeamSettingsPage';
+export { default as InstagramSettingsPage } from './InstagramSettingsPage';
+export { default as CatalogSettingsPage } from './CatalogSettingsPage';

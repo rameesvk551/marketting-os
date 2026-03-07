@@ -8,10 +8,12 @@ import {
   UserOutlined,
   BellOutlined,
   WhatsAppOutlined,
+  InstagramOutlined,
   ApiOutlined,
   KeyOutlined,
   DollarOutlined,
   TeamOutlined,
+  ShopOutlined,
 } from '@ant-design/icons';
 import type { SettingsSection } from '../types';
 
@@ -43,9 +45,19 @@ const menuItems = [
     label: 'WhatsApp API',
   },
   {
+    key: 'instagram',
+    icon: <InstagramOutlined />,
+    label: 'Instagram Config',
+  },
+  {
+    key: 'catalog',
+    icon: <ShopOutlined />,
+    label: 'Meta Catalog',
+  },
+  {
     key: 'integrations',
     icon: <ApiOutlined />,
-    label: 'Integrations',
+    label: 'More Integrations',
   },
   { type: 'divider' as const },
   {

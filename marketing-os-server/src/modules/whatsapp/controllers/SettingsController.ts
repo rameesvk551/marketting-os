@@ -54,6 +54,8 @@ export function createSettingsController(
                 webhookUrl,
                 displayPhoneNumber,
                 businessName,
+                instagramAccountId,
+                catalogId,
             } = req.body;
 
             if (!phoneNumberId || !accessToken) {
@@ -72,6 +74,8 @@ export function createSettingsController(
                 phoneDisplay: displayPhoneNumber || null,
                 businessName: businessName || null,
                 webhookVerifyToken: verifyToken || uuidv4(),
+                instagramAccountId: instagramAccountId || null,
+                catalogId: catalogId || null,
             });
 
             res.status(201).json({ data: mapToConnection(saved) });
@@ -101,6 +105,8 @@ export function createSettingsController(
                 phoneDisplay: updates.displayPhoneNumber ?? existing.phone_display,
                 businessName: updates.businessName ?? existing.business_name,
                 webhookVerifyToken: updates.verifyToken ?? existing.webhook_verify_token,
+                instagramAccountId: updates.instagramAccountId ?? existing.instagram_account_id,
+                catalogId: updates.catalogId ?? existing.catalog_id,
             });
 
             res.json({ data: mapToConnection(saved) });
@@ -202,6 +208,8 @@ function mapToConnection(row: any) {
         phoneNumberId: row.phone_number_id,
         displayPhoneNumber: row.phone_display,
         businessName: row.business_name || row.verified_name,
+        instagramAccountId: row.instagram_account_id,
+        catalogId: row.catalog_id,
         accessTokenLast4: row.access_token ? row.access_token.slice(-4) : null,
         webhookUrl: buildWebhookUrl(row.tenant_id),
         verifyToken: row.webhook_verify_token,

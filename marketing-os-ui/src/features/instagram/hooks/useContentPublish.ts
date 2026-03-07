@@ -25,7 +25,7 @@ export function useContentPublish(accountId?: string) {
     });
 
     const publishImageMutation = useMutation({
-        mutationFn: (payload: { accountId: string; imageUrl: string; caption?: string; altText?: string }) =>
+        mutationFn: (payload: { accountId: string; imageUrl: string; caption?: string; altText?: string; mediaType?: 'IMAGE' | 'STORIES' }) =>
             contentService.publishImage(payload),
         onSuccess: () => {
             message.success('Post published to Instagram! 🎉');

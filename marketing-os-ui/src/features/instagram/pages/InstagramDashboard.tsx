@@ -5,10 +5,14 @@ import {
     EditOutlined,
     PictureOutlined,
     InstagramOutlined,
+    MessageOutlined,
+    LineChartOutlined,
 } from '@ant-design/icons';
 import InstagramAccountCard from '../components/InstagramAccountCard';
 import PostComposer from '../components/PostComposer';
 import MediaLibrary from '../components/MediaLibrary';
+import SocialInbox from '../components/SocialInbox';
+import InstagramAnalytics from '../components/InstagramAnalytics';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
@@ -62,6 +66,32 @@ const InstagramDashboard: React.FC = () => {
             children: (
                 <div style={{ padding: isMobile ? 12 : 28 }}>
                     <MediaLibrary />
+                </div>
+            ),
+        },
+        {
+            key: 'inbox',
+            label: (
+                <span style={tabLabelStyle}>
+                    <MessageOutlined style={{ marginRight: 6 }} />{!isMobile && 'Inbox'}
+                </span>
+            ),
+            children: (
+                <div style={{ padding: isMobile ? 12 : 28 }}>
+                    <SocialInbox />
+                </div>
+            ),
+        },
+        {
+            key: 'analytics',
+            label: (
+                <span style={tabLabelStyle}>
+                    <LineChartOutlined style={{ marginRight: 6 }} />{!isMobile && 'Analytics'}
+                </span>
+            ),
+            children: (
+                <div style={{ padding: isMobile ? 12 : 28 }}>
+                    <InstagramAnalytics />
                 </div>
             ),
         },
