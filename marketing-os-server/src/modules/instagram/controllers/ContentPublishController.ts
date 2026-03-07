@@ -12,7 +12,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         publishImage: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId, imageUrl, caption, altText } = req.body;
 
                 if (!accountId || !imageUrl) {
@@ -41,7 +42,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         publishCarousel: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId, items, caption } = req.body;
 
                 if (!accountId || !items || items.length < 2) {
@@ -69,7 +71,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         getMedia: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { status, mediaType, limit, offset } = req.query;
 
                 const result = await publishService.getMedia(tenantId, {
@@ -90,7 +93,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         getMediaById: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const media = await publishService.getMediaById(req.params.id, tenantId);
 
                 if (!media) {
@@ -108,7 +112,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         getPublishingLimit: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.params;
 
                 const limit = await publishService.getPublishingLimit(accountId, tenantId);
@@ -121,7 +126,8 @@ export function createContentPublishController(publishService: IContentPublishSe
 
         getOEmbed: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.params;
                 const { url } = req.query;
 
@@ -142,7 +148,8 @@ export function createContentPublishController(publishService: IContentPublishSe
          */
         syncMedia: async (req: Request, res: Response, next: NextFunction) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const synced = await publishService.syncMediaFromInstagram(req.params.accountId, tenantId);
 
                 res.json({ status: 'success', data: { synced } });

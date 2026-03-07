@@ -9,7 +9,8 @@ export function createAnalyticsController(analyticsService: IAnalyticsService) {
     return {
         getAccountInsights: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.params;
                 const { period } = req.query; // 'day', 'week', '28_days', 'lifetime'
 
@@ -23,7 +24,8 @@ export function createAnalyticsController(analyticsService: IAnalyticsService) {
 
         getMediaAnalytics: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.params;
                 const { limit } = req.query;
 

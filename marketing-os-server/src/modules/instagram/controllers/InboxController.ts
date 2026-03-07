@@ -9,7 +9,8 @@ export function createInboxController(inboxService: IInboxService) {
     return {
         getComments: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.query;
 
                 const comments = await inboxService.getComments(tenantId, accountId as string);
@@ -22,7 +23,8 @@ export function createInboxController(inboxService: IInboxService) {
 
         replyToComment: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId, commentId } = req.params;
                 const { text } = req.body;
 
@@ -38,7 +40,8 @@ export function createInboxController(inboxService: IInboxService) {
 
         privateReplyToComment: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId, commentId } = req.params;
                 const { text } = req.body;
 
@@ -54,7 +57,8 @@ export function createInboxController(inboxService: IInboxService) {
 
         deleteComment: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId, commentId } = req.params;
 
                 await inboxService.deleteComment(tenantId, accountId, commentId);
@@ -67,7 +71,8 @@ export function createInboxController(inboxService: IInboxService) {
 
         getMessages: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.query;
 
                 const messages = await inboxService.getMessages(tenantId, accountId as string);
@@ -80,7 +85,8 @@ export function createInboxController(inboxService: IInboxService) {
 
         sendMessage: async (req: Request, res: Response) => {
             try {
-                const tenantId = (req as any).tenantId;
+                const tenantId = (req as any).context?.tenantId;
+                if (!tenantId) return res.status(401).json({ status: 'error', message: 'Tenant required' });
                 const { accountId } = req.params;
                 const { recipientId, text } = req.body;
 
