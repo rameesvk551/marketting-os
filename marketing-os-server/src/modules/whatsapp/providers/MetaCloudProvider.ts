@@ -62,6 +62,46 @@ function buildInteractivePayload(content: NonNullable<SendMessageRequest['intera
     };
   }
 
+  if (content.type === 'PRODUCT') {
+    return {
+      type: 'product',
+      body: { text: content.body },
+      footer: content.footer ? { text: content.footer } : undefined,
+      action: {
+        catalog_id: content.action?.catalog_id,
+        product_retailer_id: content.action?.product_retailer_id,
+      },
+    };
+  }
+
+  if (content.type === 'PRODUCT_LIST') {
+    return {
+      type: 'product_list',
+      header: content.header ? { type: 'text', text: content.header } : { type: 'text', text: 'Products' },
+      body: { text: content.body },
+      footer: content.footer ? { text: content.footer } : undefined,
+      action: {
+        catalog_id: content.action?.catalog_id,
+        sections: content.action?.sections?.map((section: any) => ({
+          title: section.title,
+          product_items: section.product_items,
+        })),
+      },
+    };
+  }
+
+  if (content.type === 'CATALOG_MESSAGE') {
+    return {
+      type: 'catalog_message',
+      body: { text: content.body },
+      footer: content.footer ? { text: content.footer } : undefined,
+      action: {
+        // You can also add product_items in action to restrict to specific items
+        name: 'catalog_message',
+      }
+    };
+  }
+
   return {};
 }
 
@@ -160,6 +200,15 @@ export function createMetaCloudProvider(config: MetaConfig): IWhatsAppProvider {
         if (msg.interactive.list_reply) {
           message.selectedListItemId = msg.interactive.list_reply.id;
         }
+      }
+
+      if (msg.order) {
+        message.messageType = 'ORDER';
+        message.orderContent = {
+          catalog_id: msg.order.catalog_id,
+          product_items: msg.order.product_items,
+          text: msg.order.text,
+        };
       }
 
       if (msg.context?.id) {

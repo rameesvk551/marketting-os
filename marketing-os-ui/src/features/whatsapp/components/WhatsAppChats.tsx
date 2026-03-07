@@ -16,6 +16,7 @@ import {
     MessageOutlined,
     PlusOutlined,
     FileTextOutlined,
+    ShopOutlined,
 } from '@ant-design/icons';
 import { useChats, pickColor, initials, formatTime } from '../hooks/useChats';
 
@@ -32,7 +33,7 @@ const WhatsAppChats: React.FC = () => {
         isLoadingTemplates, isSendingTemplate,
         conversations, messages, activeConv, filteredConversations,
         templates,
-        handleSend, handleStartNewChat, handleSendTemplate,
+        handleSend, handleStartNewChat, handleSendTemplate, handleSendCatalog, handleSendProduct, handleGeneratePaymentLink, isGeneratingPaymentLink,
     } = useChats();
 
     const [newChatPhone, setNewChatPhone] = useState('');
@@ -175,11 +176,64 @@ const WhatsAppChats: React.FC = () => {
                                     {messages.map((msg: any) => {
                                         const isOut = msg.direction === 'OUTBOUND';
                                         const msgType = msg.messageType || msg.type || 'TEXT';
-                                        const body = (msgType === 'TEXT' || msgType === 'text')
-                                            ? (msg.textContent?.body || msg.content?.body || msg.textBody || msg.body || '')
-                                            : (msgType === 'TEMPLATE' || msgType === 'template')
-                                                ? `📋 Template: ${msg.templateContent?.templateName || msg.metadata?.templateName || 'Unknown'}`
-                                                : `📎 ${msgType}`;
+                                        let body: React.ReactNode = '';
+
+                                        if (msgType === 'TEXT' || msgType === 'text') {
+                                            body = msg.textContent?.body || msg.content?.body || msg.textBody || msg.body || '';
+                                        } else if (msgType === 'TEMPLATE' || msgType === 'template') {
+                                            body = `📋 Template: ${msg.templateContent?.templateName || msg.metadata?.templateName || 'Unknown'}`;
+                                        } else if (msgType === 'ORDER') {
+                                            const order = msg.orderContent || msg.content?.order;
+                                            if (order) {
+                                                body = (
+                                                    <div style={{ background: isOut ? 'rgba(255,255,255,0.6)' : '#f0f2f5', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', minWidth: 200 }}>
+                                                        <div style={{ fontWeight: 600, marginBottom: 8, color: '#111b21' }}>🛒 Received Order</div>
+                                                        <div style={{ fontSize: 13, marginBottom: 8, color: '#54656f' }}>Catalog: {order.catalog_id}</div>
+                                                        {order.text && <div style={{ fontSize: 13, marginBottom: 8, fontStyle: 'italic', color: '#111b21' }}>"{order.text}"</div>}
+                                                        {order.product_items?.map((item: any, idx: number) => (
+                                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4, background: 'rgba(255,255,255,0.5)', padding: 4, borderRadius: 4 }}>
+                                                                <span style={{ color: '#111b21' }}>{item.product_retailer_id} ({item.quantity}x)</span>
+                                                                <span style={{ fontWeight: 600, color: '#111b21' }}>{item.item_price} {item.currency}</span>
+                                                            </div>
+                                                        ))}
+                                                        <button
+                                                            disabled={isGeneratingPaymentLink}
+                                                            onClick={() => handleGeneratePaymentLink(msg.id)}
+                                                            style={{ ...S.newChatBtn, width: '100%', marginTop: 8, justifyContent: 'center', background: isGeneratingPaymentLink ? '#cccccc' : '#25D366' }}>
+                                                            {isGeneratingPaymentLink ? 'Generating...' : 'Generate Payment Link'}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            } else {
+                                                body = '🛒 Order details missing';
+                                            }
+                                        } else if (msgType === 'INTERACTIVE') {
+                                            const interactive = msg.interactiveContent || msg.content;
+                                            if (interactive?.type === 'CATALOG_MESSAGE') {
+                                                body = (
+                                                    <div style={{ background: isOut ? '#d9fdd3' : '#fff', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', width: 200, display: 'flex', flexDirection: 'column' }}>
+                                                        <div style={{ fontSize: 13, marginBottom: 8, color: '#111b21', whiteSpace: 'pre-wrap' }}>{interactive.body?.text || interactive.body || 'View our catalog on WhatsApp'}</div>
+                                                        <div style={{ fontWeight: 600, color: '#00a884', textAlign: 'center', padding: '10px 0 2px', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 'auto' }}>
+                                                            View Catalog
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else if (interactive?.type === 'PRODUCT') {
+                                                body = (
+                                                    <div style={{ background: isOut ? '#d9fdd3' : '#fff', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', width: 200, display: 'flex', flexDirection: 'column' }}>
+                                                        <div style={{ fontSize: 13, marginBottom: 8, color: '#111b21', whiteSpace: 'pre-wrap' }}>{interactive.body?.text || interactive.body || 'Product preview'}</div>
+                                                        <div style={{ fontSize: 12, color: '#8696a0', marginBottom: 8 }}>ID: {interactive.action?.product_retailer_id}</div>
+                                                        <div style={{ fontWeight: 600, color: '#00a884', textAlign: 'center', padding: '10px 0 2px', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 'auto' }}>
+                                                            View Product
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else {
+                                                body = '👆 Interactive Message (Interactive UI not fully supported on web yet)';
+                                            }
+                                        } else {
+                                            body = `📎 ${msgType}`;
+                                        }
                                         return (
                                             <div key={msg.id} style={{ display: 'flex', justifyContent: isOut ? 'flex-end' : 'flex-start' }}>
                                                 <div style={{
@@ -218,6 +272,12 @@ const WhatsAppChats: React.FC = () => {
                             <Tooltip title="Send Template">
                                 <FileTextOutlined
                                     onClick={() => setTemplatePickerOpen(true)}
+                                    style={{ fontSize: 24, color: '#8696a0', cursor: 'pointer', flexShrink: 0, transition: 'color 0.2s' }}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Send Catalog">
+                                <ShopOutlined
+                                    onClick={handleSendCatalog}
                                     style={{ fontSize: 24, color: '#8696a0', cursor: 'pointer', flexShrink: 0, transition: 'color 0.2s' }}
                                 />
                             </Tooltip>

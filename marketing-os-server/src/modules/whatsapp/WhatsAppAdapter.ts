@@ -68,15 +68,15 @@ export function createWhatsAppAdapter(provider: IWhatsAppProvider) {
     async function sendInteractive(
         context: ConversationContext,
         content: {
-            type: 'button' | 'list' | 'product' | 'product_list';
+            type: 'button' | 'list' | 'product' | 'product_list' | 'catalog_message';
             body: string;
             header?: { type: 'text' | 'image' | 'video' | 'document'; text?: string; mediaUrl?: string };
             footer?: string;
             action: {
                 buttons?: Array<{ id: string; title: string }>;
                 sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>;
-                catalogId?: string;
-                productRetailerId?: string;
+                catalog_id?: string;
+                product_retailer_id?: string;
             };
         }
     ): Promise<string> {
@@ -115,9 +115,40 @@ export function createWhatsAppAdapter(provider: IWhatsAppProvider) {
         return result.providerMessageId!;
     }
 
+    async function sendInteractiveProductMessage(
+        context: ConversationContext,
+        catalogId: string,
+        productRetailerId: string,
+        bodyText: string = 'Check out this product',
+        footerText?: string
+    ): Promise<string> {
+        return sendInteractive(context, {
+            type: 'product',
+            body: bodyText,
+            footer: footerText,
+            action: {
+                catalog_id: catalogId,
+                product_retailer_id: productRetailerId,
+            }
+        });
+    }
+
+    async function sendInteractiveCatalogMessage(
+        context: ConversationContext,
+        bodyText: string = 'Browse our catalog!',
+        footerText?: string
+    ): Promise<string> {
+        return sendInteractive(context, {
+            type: 'catalog_message',
+            body: bodyText,
+            footer: footerText,
+            action: {}
+        });
+    }
+
     async function markAsRead(context: ConversationContext, messageId: string): Promise<void> {
         await provider.markAsRead(messageId);
     }
 
-    return { sendMessage, sendTemplate, sendMedia, sendInteractive, markAsRead };
+    return { sendMessage, sendTemplate, sendMedia, sendInteractive, sendInteractiveProductMessage, sendInteractiveCatalogMessage, markAsRead };
 }

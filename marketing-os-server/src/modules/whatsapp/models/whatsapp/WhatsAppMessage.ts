@@ -20,7 +20,8 @@ export type MessageType =
   | 'LOCATION'
   | 'CONTACT'
   | 'TEMPLATE'
-  | 'INTERACTIVE'  // Buttons, lists
+  | 'INTERACTIVE'  // Buttons, lists, products
+  | 'ORDER'        // Incoming shopping cart orders
   | 'REACTION'
   | 'STICKER'
   | 'UNKNOWN';
@@ -68,7 +69,7 @@ export interface ContactContent {
 }
 
 export interface InteractiveContent {
-  type: 'BUTTON' | 'LIST' | 'PRODUCT';
+  type: 'BUTTON' | 'LIST' | 'PRODUCT' | 'PRODUCT_LIST' | 'CATALOG_MESSAGE';
   header?: string;
   body: string;
   footer?: string;
@@ -84,6 +85,27 @@ export interface InteractiveContent {
       description?: string;
     }>;
   }>;
+  action?: {
+    catalog_id?: string;
+    product_retailer_id?: string;
+    sections?: Array<{
+      title: string;
+      product_items: Array<{
+        product_retailer_id: string;
+      }>;
+    }>;
+  };
+}
+
+export interface OrderContent {
+  catalog_id: string;
+  product_items: Array<{
+    product_retailer_id: string;
+    quantity: string;
+    item_price: string;
+    currency: string;
+  }>;
+  text?: string;
 }
 
 export interface TemplateContent {
@@ -120,6 +142,7 @@ export interface WhatsAppMessageProps {
   contactContent?: ContactContent;
   interactiveContent?: InteractiveContent;
   templateContent?: TemplateContent;
+  orderContent?: OrderContent;
 
   // Response tracking (for interactive messages)
   replyToMessageId?: string;
@@ -161,62 +184,63 @@ export interface WhatsAppMessageProps {
  * The adapter layer normalizes incoming messages to this format.
  */
 function _createWhatsAppMessage(props: WhatsAppMessageProps) {
-    return {
-        id: props.id!,
-        tenantId: props.tenantId,
-        conversationId: props.conversationId,
-        providerMessageId: props.providerMessageId,
-        providerTimestamp: props.providerTimestamp,
-        direction: props.direction,
-        senderPhone: props.senderPhone,
-        recipientPhone: props.recipientPhone,
-        messageType: props.messageType,
-        textContent: props.textContent,
-        mediaContent: props.mediaContent,
-        locationContent: props.locationContent,
-        contactContent: props.contactContent,
-        interactiveContent: props.interactiveContent,
-        templateContent: props.templateContent,
-        replyToMessageId: props.replyToMessageId,
-        selectedButtonId: props.selectedButtonId,
-        selectedListItemId: props.selectedListItemId,
-        status: props.status,
-        statusTimestamps: props.statusTimestamps ?? {},
-        failureReason: props.failureReason,
-        linkedLeadId: props.linkedLeadId,
-        linkedBookingId: props.linkedBookingId,
-        linkedTripId: props.linkedTripId,
-        handledByUserId: props.handledByUserId,
-        isProcessed: props.isProcessed,
-        processingError: props.processingError,
-        requiresResponse: props.requiresResponse,
-        idempotencyKey: props.idempotencyKey,
-        createdAt: props.createdAt!,
-        updatedAt: props.updatedAt!,
-        get textBody(): string {
-            return props.textContent?.body || props.mediaContent?.caption || props.interactiveContent?.body || '';
-        },
-    };
+  return {
+    id: props.id!,
+    tenantId: props.tenantId,
+    conversationId: props.conversationId,
+    providerMessageId: props.providerMessageId,
+    providerTimestamp: props.providerTimestamp,
+    direction: props.direction,
+    senderPhone: props.senderPhone,
+    recipientPhone: props.recipientPhone,
+    messageType: props.messageType,
+    textContent: props.textContent,
+    mediaContent: props.mediaContent,
+    locationContent: props.locationContent,
+    contactContent: props.contactContent,
+    interactiveContent: props.interactiveContent,
+    templateContent: props.templateContent,
+    orderContent: props.orderContent,
+    replyToMessageId: props.replyToMessageId,
+    selectedButtonId: props.selectedButtonId,
+    selectedListItemId: props.selectedListItemId,
+    status: props.status,
+    statusTimestamps: props.statusTimestamps ?? {},
+    failureReason: props.failureReason,
+    linkedLeadId: props.linkedLeadId,
+    linkedBookingId: props.linkedBookingId,
+    linkedTripId: props.linkedTripId,
+    handledByUserId: props.handledByUserId,
+    isProcessed: props.isProcessed,
+    processingError: props.processingError,
+    requiresResponse: props.requiresResponse,
+    idempotencyKey: props.idempotencyKey,
+    createdAt: props.createdAt!,
+    updatedAt: props.updatedAt!,
+    get textBody(): string {
+      return props.textContent?.body || props.mediaContent?.caption || props.interactiveContent?.body || '';
+    },
+  };
 }
 
 export const WhatsAppMessage = {
-    create(props: WhatsAppMessageProps) {
-        const now = new Date();
-        return _createWhatsAppMessage({
-            ...props,
-            id: props.id ?? generateId(),
-            status: props.status ?? 'PENDING',
-            statusTimestamps: props.statusTimestamps ?? {},
-            isProcessed: props.isProcessed ?? false,
-            requiresResponse: props.requiresResponse ?? false,
-            idempotencyKey: props.idempotencyKey ?? `${props.providerMessageId}-${props.tenantId}`,
-            createdAt: props.createdAt ?? now,
-            updatedAt: props.updatedAt ?? now,
-        });
-    },
-    fromPersistence(data: WhatsAppMessageProps) {
-        return _createWhatsAppMessage(data);
-    },
+  create(props: WhatsAppMessageProps) {
+    const now = new Date();
+    return _createWhatsAppMessage({
+      ...props,
+      id: props.id ?? generateId(),
+      status: props.status ?? 'PENDING',
+      statusTimestamps: props.statusTimestamps ?? {},
+      isProcessed: props.isProcessed ?? false,
+      requiresResponse: props.requiresResponse ?? false,
+      idempotencyKey: props.idempotencyKey ?? `${props.providerMessageId}-${props.tenantId}`,
+      createdAt: props.createdAt ?? now,
+      updatedAt: props.updatedAt ?? now,
+    });
+  },
+  fromPersistence(data: WhatsAppMessageProps) {
+    return _createWhatsAppMessage(data);
+  },
 };
 
 export type WhatsAppMessage = ReturnType<typeof _createWhatsAppMessage>;

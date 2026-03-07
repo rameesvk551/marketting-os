@@ -54,6 +54,7 @@ export interface IncomingMessage {
   replyToMessageId?: string;
   selectedButtonId?: string;
   selectedListItemId?: string;
+  orderContent?: any; // Replace with proper OrderContent import later
   providerMetadata?: Record<string, unknown>;
 }
 

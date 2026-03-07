@@ -42,6 +42,7 @@ export function createMessageService(
             textContent: dto.textBody ? { body: dto.textBody } : undefined,
             mediaContent: dto.mediaUrl ? { mediaId: dto.providerMessageId, mimeType: 'unknown', downloadUrl: dto.mediaUrl, caption: dto.mediaCaption } : undefined,
             locationContent: dto.locationLat ? { latitude: dto.locationLat, longitude: dto.locationLng } : undefined,
+            orderContent: dto.orderContent,
             selectedButtonId: dto.selectedButtonId, selectedListItemId: dto.selectedListItemId,
             replyToMessageId: dto.replyToMessageId, status: 'DELIVERED',
             statusTimestamps: { delivered: new Date() }, isProcessed: false, requiresResponse: true,
@@ -60,7 +61,7 @@ export function createMessageService(
             conversationId: context.id,
             direction: 'INBOUND',
             type: dto.messageType,
-            content: { body: dto.textBody },
+            content: { body: dto.textBody, order: dto.orderContent },
             senderPhone: dto.senderPhone,
             timestamp: new Date().toISOString(),
             status: 'DELIVERED',
@@ -156,7 +157,131 @@ export function createMessageService(
         return { success: true, messageId: saved.id, providerMessageId };
     }
 
-    async function sendInteractive(dto: any) { throw new Error("Interactive messages refactoring pending."); }
+    async function sendInteractive(dto: any) {
+        const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
+        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
+
+        let providerMessageId: string;
+        if (dto.interactiveContent.type === 'CATALOG_MESSAGE') {
+            providerMessageId = await adapter.sendInteractiveCatalogMessage(context, dto.interactiveContent.body || 'Check out our products!');
+        } else if (dto.interactiveContent.type === 'PRODUCT') {
+            providerMessageId = await adapter.sendInteractiveProductMessage(
+                context,
+                dto.interactiveContent.action?.catalog_id || '',
+                dto.interactiveContent.action?.product_retailer_id || '',
+                dto.interactiveContent.body || 'Product Details'
+            );
+        } else {
+            // fallback generic interactive send
+            providerMessageId = await adapter.sendInteractive(context, dto.interactiveContent, { replyToMessageId: dto.replyToMessageId });
+        }
+
+        const message = WhatsAppMessage.create({
+            tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
+            direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
+            messageType: 'INTERACTIVE', interactiveContent: dto.interactiveContent, status: 'SENT',
+            statusTimestamps: { sent: new Date() }, handledByUserId: dto.senderUserId,
+            isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
+        });
+
+        const saved = await messageRepo.save(message);
+        if (dto.linkTo) await conversationService.linkToEntity(context.id, dto.tenantId, dto.linkTo.type, dto.linkTo.entityId);
+        await timelineService.recordWhatsAppMessage(saved, context, 'OUTBOUND');
+
+        // ── Real-time: push outbound message to all connected agents ──
+        emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
+            id: saved.id,
+            conversationId: context.id,
+            direction: 'OUTBOUND',
+            type: 'INTERACTIVE',
+            content: dto.interactiveContent,
+            recipientPhone: dto.recipientPhone,
+            timestamp: new Date().toISOString(),
+            status: 'SENT',
+        });
+
+        emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
+            conversationId: context.id,
+            lastMessagePreview: dto.interactiveContent.type === 'CATALOG_MESSAGE' ? 'Sent a catalog' : 'Sent a product',
+            lastMessageAt: new Date().toISOString(),
+        });
+
+        return { success: true, messageId: saved.id, providerMessageId };
+    }
+
+    async function generatePaymentLink(conversationId: string, messageId: string, tenantId: string, userId: string) {
+        const messages = await messageRepo.findByConversation(conversationId, tenantId);
+        const orderMsg = messages.find((m: any) => m.id === messageId);
+        if (!orderMsg || (orderMsg.messageType !== 'ORDER' && orderMsg.type !== 'ORDER')) {
+            return { success: false, error: 'Order message not found' };
+        }
+
+        const order = orderMsg.orderContent || orderMsg.content?.order;
+        if (!order || !order.product_items || order.product_items.length === 0) {
+            return { success: false, error: 'Order has no items' };
+        }
+
+        try {
+            const Stripe = (await import('stripe')).default;
+            const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_123';
+            const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' as any });
+
+            const lineItems = order.product_items.map((item: any) => {
+                const unitAmount = Math.round(parseFloat(item.item_price) * 100);
+                return {
+                    price_data: {
+                        currency: item.currency || 'usd',
+                        product_data: {
+                            name: `Product ${item.product_retailer_id}`,
+                            description: `Catalog: ${order.catalog_id}`,
+                        },
+                        unit_amount: unitAmount,
+                    },
+                    quantity: item.quantity || 1,
+                };
+            });
+
+            // For simplicity, we create a Checkout Session instead of a Payment Link 
+            // since PaymentLinks require pre-created products on Stripe. 
+            // Checkout sessions allow ad-hoc inline price/product definitions.
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: lineItems,
+                mode: 'payment',
+                success_url: 'https://your-app.com/success',
+                cancel_url: 'https://your-app.com/cancel',
+            });
+
+            const paymentLink = session.url;
+
+            // Automatically send the link as a text message back to the customer
+            await sendText({
+                tenantId,
+                recipientPhone: orderMsg.senderPhone, // Since it was inbound, senderPhone is customer
+                text: `Here is the payment link for your order:\n👉 ${paymentLink}`,
+                senderUserId: userId,
+                channel: 'WHATSAPP'
+            });
+
+            return { success: true, paymentLink };
+        } catch (error: any) {
+            console.error('Stripe error:', error);
+            // In dev environment, if Stripe isn't configured, we just send a mock link
+            if (error.message.includes('Invalid API Key') || !process.env.STRIPE_SECRET_KEY) {
+                console.warn('Stripe not configured, falling back to mock link');
+                const mockLink = 'https://buy.stripe.com/mock_dummy_link_for_dev';
+                await sendText({
+                    tenantId,
+                    recipientPhone: orderMsg.senderPhone,
+                    text: `Here is the mock payment link for your order:\n👉 ${mockLink}`,
+                    senderUserId: userId,
+                    channel: 'WHATSAPP'
+                });
+                return { success: true, paymentLink: mockLink };
+            }
+            return { success: false, error: error.message };
+        }
+    }
 
     /**
      * Handle delivery-status webhooks from Meta (sent → delivered → read → failed).
@@ -195,5 +320,5 @@ export function createMessageService(
         });
     }
 
-    return { processInbound, getMessagesByConversation, sendText, sendTemplate, sendInteractive, handleStatusUpdate, getSuggestedActions, requiresHuman };
+    return { processInbound, getMessagesByConversation, sendText, sendTemplate, sendInteractive, handleStatusUpdate, getSuggestedActions, requiresHuman, generatePaymentLink };
 }

@@ -204,6 +204,7 @@ export function createWebhookController(
                         textBody: message.textContent?.body, mediaUrl: message.mediaContent?.downloadUrl, mediaCaption: message.mediaContent?.caption,
                         locationLat: message.locationContent?.latitude, locationLng: message.locationContent?.longitude,
                         selectedButtonId: message.selectedButtonId, selectedListItemId: message.selectedListItemId,
+                        orderContent: (message as any).orderContent,
                         replyToMessageId: message.replyToMessageId, providerMetadata: message.providerMetadata,
                     });
 
@@ -407,10 +408,58 @@ export function createWebhookController(
                 return;
             }
 
+            if (normalizedType === 'catalog') {
+                const messageBody = typeof text === 'string' ? text : text?.body || 'Check out our products!';
+
+                // Resolve provider/adapter
+                const { getPool } = await import('../../../config/database.js');
+                const pool = getPool();
+                const tenantConfigResult = await pool.query(
+                    `SELECT * FROM whatsapp_business_configs WHERE tenant_id = $1 AND status = 'connected' LIMIT 1`,
+                    [req.context?.tenantId]
+                );
+
+                if (tenantConfigResult.rows.length === 0) {
+                    res.status(400).json({ error: 'Tenant WhatsApp config not found' });
+                    return;
+                }
+
+                // Need to get adapter to call sendInteractiveCatalogMessage
+                // Since WebhookController is passed `provider` directly, but `WhatsAppAdapter` wraps it.
+                // We'll rely on a manual reconstruction or direct provider call since 'catalog_message' builds appropriately now
+
+                const result = await provider.sendMessage({
+                    recipientPhone,
+                    messageType: 'INTERACTIVE',
+                    interactiveContent: {
+                        type: 'CATALOG_MESSAGE',
+                        body: messageBody,
+                        action: { catalog_id: undefined } // Backend should handle auto association or pass it from config
+                    },
+                    replyToMessageId,
+                });
+
+                if (!result.success) {
+                    res.status(400).json({ success: false, error: result.errorMessage, errorCode: result.errorCode });
+                    return;
+                }
+
+                await audit(req.context?.tenantId, {
+                    eventType: 'outbound_catalog_sent',
+                    actorType: 'USER',
+                    actorId: req.context?.userId,
+                    actorPhone: recipientPhone,
+                    payload: { providerMessageId: result.providerMessageId },
+                });
+
+                res.json({ success: true, messageId: result.providerMessageId, timestamp: result.timestamp });
+                return;
+            }
+
             res.status(400).json({
                 success: false,
                 error: `Unsupported message type: ${type}`,
-                supportedTypes: ['text', 'template', 'image', 'video', 'audio', 'document'],
+                supportedTypes: ['text', 'template', 'image', 'video', 'audio', 'document', 'catalog'],
             });
         } catch (error) {
             next(error);

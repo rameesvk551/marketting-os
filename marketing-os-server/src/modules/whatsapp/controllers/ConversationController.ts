@@ -49,6 +49,48 @@ export function createConversationController(
         } catch (error) { next(error); }
     };
 
+    const sendInteractive = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const userId = req.context?.userId;
+            const { id } = req.params;
+            const { interactiveContent, recipientPhone } = req.body;
+            if (!tenantId) { res.status(401).json({ error: 'Authentication required' }); return; }
+
+            let phone = recipientPhone;
+            if (!phone && id) { const conv = await conversationRepo.findById(id, tenantId); if (conv) phone = conv.primaryActor?.phoneNumber || conv.externalId; }
+            if (!phone) { res.status(400).json({ error: 'Could not resolve recipient phone' }); return; }
+
+            if (optInRepo) { const optIn = await optInRepo.findByPhone(phone, tenantId); if (!optIn || optIn.status !== 'OPTED_IN') { res.status(403).json({ error: 'Recipient has not opted in to receive WhatsApp messages', code: 'NO_OPT_IN' }); return; } }
+
+            const result = await messageService.sendInteractive({
+                tenantId,
+                recipientPhone: phone,
+                interactiveContent,
+                senderUserId: userId || 'system',
+                linkTo: id ? { type: 'LEAD', entityId: id } : undefined
+            });
+
+            if (!result.success) { res.status(400).json({ error: result.error }); return; }
+            res.json({ data: result });
+        } catch (error) { next(error); }
+    };
+
+    const generatePaymentLink = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const userId = req.context?.userId;
+            const { id: conversationId, messageId } = req.params;
+
+            if (!tenantId || !userId) { res.status(401).json({ error: 'Authentication required' }); return; }
+
+            const result = await messageService.generatePaymentLink(conversationId, messageId, tenantId, userId);
+
+            if (!result.success) { res.status(400).json({ error: result.error }); return; }
+            res.json({ data: result });
+        } catch (error) { next(error); }
+    };
+
     const sendTemplate = async (req: any, res: any, next: any) => {
         try {
             const tenantId = req.context?.tenantId; const userId = req.context?.userId;
@@ -170,8 +212,9 @@ export function createConversationController(
     };
 
     return {
-        list, getById, sendMessage, sendTemplate, linkEntity, escalate, getEscalated,
+        list, getById, sendMessage, sendInteractive, sendTemplate, linkEntity, escalate, getEscalated,
         getConversations: list, getConversation: getById,
         assignOperator, close, getMessages, broadcast, startNew, sendConversationTemplate,
+        generatePaymentLink,
     };
 }

@@ -107,6 +107,26 @@ export function useChats() {
         onError: (error: any) => antMessage.error(`Failed to send template: ${error.message}`),
     });
 
+    const sendInteractiveMutation = useMutation({
+        mutationFn: (interactiveContent: any) => conversationService.sendInteractive(selectedConversationId!, interactiveContent),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['messages', selectedConversationId] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        },
+        onError: (error: any) => antMessage.error(`Failed to send message: ${error.message}`),
+    });
+
+    const generatePaymentLinkMutation = useMutation({
+        mutationFn: (messageId: string) => conversationService.generatePaymentLink(selectedConversationId!, messageId),
+        onSuccess: (res: any) => {
+            if (res.data?.paymentLink) {
+                antMessage.success('Payment link generated and sent!');
+            }
+            queryClient.invalidateQueries({ queryKey: ['messages', selectedConversationId] });
+        },
+        onError: (error: any) => antMessage.error(`Failed to generate link: ${error.message}`),
+    });
+
     /* scroll to bottom on new messages */
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,6 +145,31 @@ export function useChats() {
     const handleSendTemplate = (templateName: string, language?: string, variables?: any) => {
         if (!selectedConversationId) return;
         sendTemplateMutation.mutate({ templateName, language, variables });
+    };
+
+    const handleSendCatalog = () => {
+        if (!selectedConversationId) return;
+        sendInteractiveMutation.mutate({
+            type: 'CATALOG_MESSAGE',
+            body: 'View our catalog here:'
+        });
+    };
+
+    const handleSendProduct = (catalogId: string, productId: string) => {
+        if (!selectedConversationId) return;
+        sendInteractiveMutation.mutate({
+            type: 'PRODUCT',
+            body: 'Check out this product:',
+            action: {
+                catalog_id: catalogId,
+                product_retailer_id: productId
+            }
+        });
+    };
+
+    const handleGeneratePaymentLink = (messageId: string) => {
+        if (!selectedConversationId) return;
+        generatePaymentLinkMutation.mutate(messageId);
     };
 
     /* derived data */
@@ -177,5 +222,9 @@ export function useChats() {
         handleSend,
         handleStartNewChat,
         handleSendTemplate,
+        handleSendCatalog,
+        handleSendProduct,
+        handleGeneratePaymentLink,
+        isGeneratingPaymentLink: generatePaymentLinkMutation.isPending,
     };
 }

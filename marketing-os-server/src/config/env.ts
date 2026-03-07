@@ -156,7 +156,7 @@ export const config: Config = {
             systemUserToken: process.env.META_SYSTEM_USER_TOKEN,
             appWabaId: process.env.META_APP_WABA_ID,
         },
-        verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
+        verifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN,
     },
     instagram: {
         accessToken: getEnvOrDefault('INSTAGRAM_ACCESS_TOKEN', ''),

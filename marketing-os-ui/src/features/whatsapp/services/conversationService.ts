@@ -41,6 +41,16 @@ export const conversationService = {
         return data;
     },
 
+    sendInteractive: async (conversationId: string, interactiveContent: any, recipientPhone?: string) => {
+        const { data } = await client.post(`/whatsapp/conversations/${conversationId}/send-interactive`, { interactiveContent, recipientPhone });
+        return data;
+    },
+
+    generatePaymentLink: async (conversationId: string, messageId: string) => {
+        const { data } = await client.post(`/whatsapp/conversations/${conversationId}/messages/${messageId}/payment-link`);
+        return data;
+    },
+
     assignOperator: async (conversationId: string, userId: string) => {
         const { data } = await client.post(`/whatsapp/conversations/${conversationId}/assign`, { userId });
         return data;

@@ -245,6 +245,18 @@ export function createWhatsAppRoutes(dependencies: {
     conversationController.sendConversationTemplate
   );
 
+  // Send interactive message in conversation (no opt-in required)
+  router.post('/conversations/:id/send-interactive',
+    sendMessageRateLimiter,
+    conversationController.sendInteractive
+  );
+
+  // Generate payment link from an order message
+  router.post('/conversations/:id/messages/:messageId/payment-link',
+    sendMessageRateLimiter,
+    conversationController.generatePaymentLink
+  );
+
   // ============================================
   // AUTOMATION RULES ROUTES
   // ============================================
