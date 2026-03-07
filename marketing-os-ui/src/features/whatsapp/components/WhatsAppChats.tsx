@@ -33,7 +33,7 @@ const WhatsAppChats: React.FC = () => {
         isLoadingTemplates, isSendingTemplate,
         conversations, messages, activeConv, filteredConversations,
         templates,
-        handleSend, handleStartNewChat, handleSendTemplate, handleSendCatalog, handleSendProduct, handleGeneratePaymentLink, isGeneratingPaymentLink,
+        handleSend, handleStartNewChat, handleSendTemplate, handleSendCatalog, handleGeneratePaymentLink, isGeneratingPaymentLink,
     } = useChats();
 
     const [newChatPhone, setNewChatPhone] = useState('');
