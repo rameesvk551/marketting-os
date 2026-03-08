@@ -44,11 +44,11 @@ const navItems: MenuItem[] = [
         icon: <InstagramOutlined />,
         label: 'Instagram',
     },
-    {
-        key: '/catalog',
-        icon: <ShoppingCartOutlined />,
-        label: 'Catalog',
-    },
+    // {
+    //     key: '/catalog',
+    //     icon: <ShoppingCartOutlined />,
+    //     label: 'Catalog',
+    // },
     {
         type: 'divider',
     },

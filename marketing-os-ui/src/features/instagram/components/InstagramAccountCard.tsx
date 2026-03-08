@@ -1,21 +1,14 @@
 import React, { useState } from 'react';
-import { Card, Avatar, Button, Tag, Typography, Row, Col, Tooltip, Progress, Input, message as antMessage } from 'antd';
+import { Card, Button, Typography, Row, Col, Input, message as antMessage } from 'antd';
 import {
     InstagramOutlined,
-    UserOutlined,
     LinkOutlined,
-    DisconnectOutlined,
-    ReloadOutlined,
-    CheckCircleFilled,
     CameraOutlined,
     HeartOutlined,
-    TeamOutlined,
-    RiseOutlined,
-    SafetyCertificateOutlined,
-    ApiOutlined,
     ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useInstagramAuth } from '../hooks/useInstagramAuth';
+import InstagramDashboardOverview from './InstagramDashboardOverview';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -34,7 +27,6 @@ const InstagramAccountCard: React.FC = () => {
         isConnecting,
         disconnect,
         isDisconnecting,
-        refreshToken,
     } = useInstagramAuth();
 
     // Manual form state
@@ -69,115 +61,13 @@ const InstagramAccountCard: React.FC = () => {
     ────────────────────────────────────────────── */
     if (isConnected && accounts.length > 0) {
         const account = accounts[0];
-        const tokenHealth = account.status === 'active' ? 100 : account.status === 'token_expired' ? 10 : 50;
 
         return (
-            <div>
-                {/* ── Hero Profile Card ── */}
-                <Card
-                    style={{
-                        borderRadius: 20, overflow: 'hidden', border: 'none',
-                        boxShadow: '0 4px 24px rgba(131,58,180,0.10), 0 1px 4px rgba(0,0,0,0.04)',
-                        marginBottom: 20,
-                    }}
-                    styles={{ body: { padding: 0 } }}
-                >
-                    {/* Gradient Banner */}
-                    <div style={{
-                        background: IG_GRADIENT, height: 140, position: 'relative',
-                        display: 'flex', alignItems: 'flex-end', padding: '0 32px 0',
-                    }}>
-                        <div style={{
-                            position: 'absolute', inset: 0,
-                            background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.10) 0%, transparent 40%)',
-                        }} />
-                        <div style={{ position: 'relative', top: 40, zIndex: 2 }}>
-                            <div style={{
-                                padding: 4, borderRadius: '50%', background: '#fff',
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.12)', display: 'inline-block',
-                            }}>
-                                <Avatar size={88} src={account.profilePictureUrl} icon={<UserOutlined />} style={{ border: '3px solid #fff' }} />
-                            </div>
-                        </div>
-                        <div style={{ position: 'absolute', top: 16, right: 20, display: 'flex', gap: 8, zIndex: 2 }}>
-                            <Tooltip title="Refresh Token">
-                                <Button icon={<ReloadOutlined />} onClick={() => refreshToken(account.id)} shape="circle" size="small"
-                                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', backdropFilter: 'blur(8px)' }}
-                                />
-                            </Tooltip>
-                            <Button icon={<DisconnectOutlined />} onClick={() => disconnect(account.id)} loading={isDisconnecting} size="small"
-                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', backdropFilter: 'blur(8px)', borderRadius: 20, fontWeight: 500, fontSize: 12, padding: '0 14px' }}
-                            >
-                                Disconnect
-                            </Button>
-                        </div>
-                    </div>
-                    <div style={{ padding: '48px 32px 28px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                            <Title level={4} style={{ margin: 0, fontWeight: 700, letterSpacing: '-0.3px' }}>@{account.username}</Title>
-                            <Tag icon={<CheckCircleFilled />} color="success" style={{ borderRadius: 20, fontWeight: 600, fontSize: 11, padding: '0 10px' }}>Connected</Tag>
-                            <Tag color="purple" style={{ borderRadius: 20, fontWeight: 500, fontSize: 11, padding: '0 10px' }}>{account.accountType}</Tag>
-                        </div>
-                        <Text type="secondary" style={{ fontSize: 14 }}>{account.name || 'Instagram Business Account'}</Text>
-                    </div>
-                </Card>
-
-                {/* ── Stats Grid ── */}
-                <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-                    {[
-                        { icon: <TeamOutlined style={{ fontSize: 20, color: '#833AB4' }} />, label: 'Followers', value: account.followersCount || 0, color: '#f3e8ff', suffix: <RiseOutlined style={{ color: '#22c55e', fontSize: 12 }} /> },
-                        { icon: <HeartOutlined style={{ fontSize: 20, color: '#FD1D1D' }} />, label: 'Following', value: account.followsCount || 0, color: '#fff1f2' },
-                        { icon: <CameraOutlined style={{ fontSize: 20, color: '#F77737' }} />, label: 'Posts', value: account.mediaCount || 0, color: '#fff7ed' },
-                    ].map((stat, idx) => (
-                        <Col xs={24} sm={8} key={idx}>
-                            <Card style={{ borderRadius: 16, border: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', background: stat.color }} styles={{ body: { padding: '20px 24px' } }} hoverable>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                    <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                                        {stat.icon}
-                                    </div>
-                                    <div>
-                                        <Text type="secondary" style={{ fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</Text>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <Title level={3} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>{(stat.value || 0).toLocaleString()}</Title>
-                                            {stat.suffix}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-
-                {/* ── Status Cards ── */}
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                        <Card style={{ borderRadius: 16, border: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }} styles={{ body: { padding: '20px 24px' } }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                                <SafetyCertificateOutlined style={{ fontSize: 18, color: '#22c55e' }} />
-                                <Text strong style={{ fontSize: 14 }}>Token Health</Text>
-                            </div>
-                            <Progress percent={tokenHealth} strokeColor={tokenHealth > 50 ? { from: '#22c55e', to: '#86efac' } : { from: '#ef4444', to: '#fca5a5' }} trailColor="#f1f5f9" strokeWidth={10} style={{ marginBottom: 8 }} />
-                            <Text type="secondary" style={{ fontSize: 12 }}>{account.status === 'active' ? 'Token is healthy and active' : 'Token needs attention'}</Text>
-                        </Card>
-                    </Col>
-                    <Col xs={24} md={12}>
-                        <Card style={{ borderRadius: 16, border: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }} styles={{ body: { padding: '20px 24px' } }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                                <ApiOutlined style={{ fontSize: 18, color: '#833AB4' }} />
-                                <Text strong style={{ fontSize: 14 }}>API Status</Text>
-                            </div>
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                {['Content Publishing', 'Comments', 'Insights', 'Messaging'].map(api => (
-                                    <Tag key={api} color="green" style={{ borderRadius: 20, padding: '2px 12px', fontSize: 12, fontWeight: 500, margin: '2px 0' }}>✓ {api}</Tag>
-                                ))}
-                            </div>
-                            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 10 }}>
-                                Last synced: {account.lastSyncedAt ? new Date(account.lastSyncedAt).toLocaleString() : 'Never'}
-                            </Text>
-                        </Card>
-                    </Col>
-                </Row>
-            </div>
+            <InstagramDashboardOverview
+                account={account}
+                onDisconnect={disconnect}
+                isDisconnecting={isDisconnecting}
+            />
         );
     }
 
