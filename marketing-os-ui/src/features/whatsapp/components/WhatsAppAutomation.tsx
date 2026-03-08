@@ -5,6 +5,7 @@ import React from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, Card, Typography, Tag, Switch, Alert, Result } from 'antd';
 import { EditOutlined, DeleteOutlined, ThunderboltOutlined, RobotOutlined } from '@ant-design/icons';
 import { useAutomation } from '../hooks/useAutomation';
+import AutomationFlowBuilder from './AutomationFlowBuilder';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -69,6 +70,10 @@ const WhatsAppAutomation: React.FC = () => {
             <div style={{ marginTop: 24 }}>
                 <Title level={5}>Legacy Rules</Title>
                 <Table columns={ruleColumns} dataSource={rules} rowKey="id" loading={isRulesLoading} pagination={{ pageSize: 5 }} />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+                <AutomationFlowBuilder />
             </div>
 
             <Modal
@@ -150,6 +155,18 @@ const WhatsAppAutomation: React.FC = () => {
                                     return (
                                         <Form.Item name={['actionConfig', 'tag']} label="Tag Name" rules={[{ required: true }]}>
                                             <Input placeholder="e.g. hot_lead" />
+                                        </Form.Item>
+                                    );
+                                }
+                                if (actionType === 'ASSIGN_AGENT') {
+                                    const AGENTS = ['Meera Joshi', 'Arjun Das', 'Riya Sharma', 'Kabir Anand'];
+                                    return (
+                                        <Form.Item name={['actionConfig', 'agentId']} label="Select Agent" rules={[{ required: true }]}>
+                                            <Select placeholder="Choose an agent...">
+                                                {AGENTS.map(agent => (
+                                                    <Option key={agent} value={agent}>{agent}</Option>
+                                                ))}
+                                            </Select>
                                         </Form.Item>
                                     );
                                 }

@@ -13,6 +13,9 @@ export function useBroadcast() {
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
     const [recipientCount, setRecipientCount] = useState(0);
     const [recipientsText, setRecipientsText] = useState('');
+    const [segmentRecipients, setSegmentRecipients] = useState<any[]>([]);
+
+    const tenantId = localStorage.getItem('tenantId') || 'tenant-123'; // Using basic mock tenant id for now
 
     /* queries */
     const { data: templatesData } = useQuery({
@@ -44,16 +47,35 @@ export function useBroadcast() {
         setSelectedTemplate(template);
     };
 
-    const onRecipientsChange = (e: any) => {
-        const text = e.target.value;
-        setRecipientsText(text);
-        const count = text.split('\n').filter((line: string) => line.trim().length > 0).length;
-        setRecipientCount(count);
+    const onRecipientsChange = async () => {
+        const source = form.getFieldValue('recipientSource');
+        if (source === 'manual') {
+            const text = form.getFieldValue('recipients') || '';
+            setRecipientsText(text);
+            const count = text.split('\n').filter((line: string) => line.trim().length > 0).length;
+            setRecipientCount(count);
+        } else if (source === 'contacts') {
+            const tags = form.getFieldValue('audienceTags') || [];
+            try {
+                const recipients = await broadcastService.getSegments(tenantId, tags);
+                setSegmentRecipients(recipients);
+                setRecipientCount(recipients.length);
+            } catch (err) {
+                console.error("Failed to fetch segments:", err);
+                message.error("Failed to evaluate audience size.");
+            }
+        }
     };
 
     const next = async () => {
         try {
             await form.validateFields();
+            if (currentStep === 1) {
+                // Manually trigger audience calculation if coming from contacts to be safe
+                if (form.getFieldValue('recipientSource') === 'contacts') {
+                    await onRecipientsChange();
+                }
+            }
             setCurrentStep(s => s + 1);
         } catch (error) {
             console.error('Validation failed:', error);
@@ -63,20 +85,39 @@ export function useBroadcast() {
     const prev = () => setCurrentStep(s => s - 1);
 
     const handleSend = () => {
-        if (!recipientsText.trim()) {
-            message.error('No recipients found. Please go back and add recipients.');
-            return;
+        const source = form.getFieldValue('recipientSource');
+        const scheduleType = form.getFieldValue('schedule');
+        const scheduledTime = form.getFieldValue('scheduledTime');
+
+        let recipients: any[] = [];
+
+        if (source === 'manual') {
+            if (!recipientsText.trim()) {
+                message.error('No recipients found. Please go back and add recipients.');
+                return;
+            }
+            recipients = recipientsText
+                .split('\n')
+                .filter((line: string) => line.trim().length > 0)
+                .map((phone: string) => ({ phone: phone.trim() }));
+        } else if (source === 'contacts') {
+            if (segmentRecipients.length === 0) {
+                message.error('Selected audience contains no contacts.');
+                return;
+            }
+            recipients = segmentRecipients;
         }
 
-        const recipients = recipientsText
-            .split('\n')
-            .filter((line: string) => line.trim().length > 0)
-            .map((phone: string) => ({ phone: phone.trim() }));
+        let scheduledAt: string | null = null;
+        if (scheduleType === 'later' && scheduledTime) {
+            scheduledAt = scheduledTime.toISOString();
+        }
 
         broadcastMutation.mutate({
             templateName: selectedTemplate.template_name || selectedTemplate.name,
             language: selectedTemplate.language,
             recipients,
+            ...(scheduledAt && { scheduledAt }),
         });
     };
 

@@ -186,10 +186,45 @@ export function createSettingsController(
         } catch (error) { next(error); }
     };
 
+    // ────────────────────────────────────────────
+    // PUT  /settings/auto-reply
+    // ────────────────────────────────────────────
+    const updateAutoReply = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+
+            const existing = await waConfigRepo.findByTenantId(tenantId);
+            if (!existing) { res.status(404).json({ error: 'No connection found for this tenant' }); return; }
+
+            const { autoGreetingMessage, awayMessage, businessHours } = req.body;
+            const saved = await waConfigRepo.save({
+                tenantId,
+                credentialSource: existing.credential_source || 'own',
+                status: existing.status || 'connected',
+                onboardingMethod: existing.onboarding_method || 'manual',
+                accessToken: existing.access_token,
+                phoneNumberId: existing.phone_number_id,
+                wabaId: existing.waba_id,
+                phoneDisplay: existing.phone_display,
+                businessName: existing.business_name,
+                webhookVerifyToken: existing.webhook_verify_token,
+                instagramAccountId: existing.instagram_account_id,
+                catalogId: existing.catalog_id,
+                autoGreetingMessage,
+                awayMessage,
+                businessHours,
+            });
+
+            res.json({ data: mapToConnection(saved) });
+        } catch (error) { next(error); }
+    };
+
     return {
         getConnection,
         saveManualConfig,
         updateManualConfig,
+        updateAutoReply,
         testConnection,
         disconnect,
         regenerateVerifyToken,
@@ -218,6 +253,9 @@ function mapToConnection(row: any) {
         errorMessage: row.error_message,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        autoGreetingMessage: row.auto_greeting_message,
+        awayMessage: row.away_message,
+        businessHours: row.business_hours,
     };
 }
 

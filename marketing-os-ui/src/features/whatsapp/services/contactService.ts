@@ -1,21 +1,20 @@
-// services/contactService.ts
-// API calls for WhatsApp opt-in / contacts.
-
 import client from '../../../api/client';
 
 export const contactService = {
-    getOptInStatus: async (phone: string) => {
-        const { data } = await client.get(`/whatsapp/opt-in/${phone}`);
-        return data;
+    getContacts: async () => {
+        const { data } = await client.get('/contacts');
+        return data.data;
     },
 
-    recordOptIn: async (optIn: any) => {
-        const { data } = await client.post('/whatsapp/opt-in', optIn);
-        return data;
-    },
+    importContactsCsv: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    updateOptIn: async (phone: string, updates: any) => {
-        const { data } = await client.put(`/whatsapp/opt-in/${phone}`, updates);
+        const { data } = await client.post('/contacts/import/csv', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
         return data;
-    },
+    }
 };

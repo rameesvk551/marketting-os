@@ -1,14 +1,17 @@
 // application/services/whatsapp/AIEcommerceAssistant.ts
+import { cartService } from './CartService.js';
+import Order from '../../../db/nosqlmodels/Order.js';
 
 interface UserState {
     userId: string;
-    currentView: 'MENU' | 'BROWSING' | 'SEARCHING' | 'CART' | 'CHECKOUT';
-    cart: { productId: string; quantity: number; name: string; price: number }[];
+    currentView: 'MENU' | 'BROWSING' | 'SEARCHING' | 'CART' | 'CHECKOUT' | 'BOOKING';
     lastViewedProductId?: string;
     checkoutStep?: 'ADDRESS' | 'PAYMENT' | 'CONFIRMATION';
+    bookingData?: { serviceType?: string; appointmentDate?: string };
+    bookingStep?: 'SERVICE' | 'DATE' | 'CONFIRMATION';
 }
 
-export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any) {
+export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any, appointmentService?: any) {
     // In-memory state store for MVP. In production, this should be in Redis or Postgres.
     const userStates: Map<string, UserState> = new Map();
 
@@ -17,7 +20,6 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
             userStates.set(userId, {
                 userId,
                 currentView: 'MENU',
-                cart: [],
             });
         }
         return userStates.get(userId)!;
@@ -34,7 +36,7 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
         const bodyText = "Welcome to our store! 👋\nHow can I help you today?";
         const buttons = [
             { id: 'view_products', title: '🛍️ View Products' },
-            { id: 'view_categories', title: '📂 Categories' },
+            { id: 'book_appointment', title: '📅 Book Consultation' },
             { id: 'search_product', title: '🔍 Search' }
         ];
 
@@ -88,10 +90,12 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
         }
     };
 
-    const sendCart = async (tenantId: string, recipientPhone: string, state: UserState, ms: any) => {
+    const sendCart = async (tenantId: string, recipientPhone: string, ms: any) => {
         updateState(recipientPhone, { currentView: 'CART' });
 
-        if (state.cart.length === 0) {
+        const cart = await cartService.getCart(recipientPhone, tenantId);
+
+        if (!cart || cart.items.length === 0) {
             const bodyText = "Your cart is empty. 🛒 Let's add some items!";
             const buttons = [
                 { id: 'view_products', title: '🛍️ View Products' },
@@ -103,10 +107,10 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
 
         let text = "*Your Cart:*\n\n";
         let total = 0;
-        state.cart.forEach((item, index) => {
+        cart.items.forEach((item, index) => {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
-            text += `${index + 1}. ${item.name} x${item.quantity} - ₹${itemTotal}\n`;
+            text += `${index + 1}. ${item.productName} x${item.quantity} - ₹${itemTotal}\n`;
         });
         text += `\n*Total: ₹${total}*`;
 
@@ -119,7 +123,7 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
         await ms.sendInteractive({ tenantId, recipientPhone, bodyText: text, buttons, senderUserId: 'AI_ASSISTANT' });
     };
 
-    const addToCart = async (tenantId: string, recipientPhone: string, productId: string, state: UserState, ms: any) => {
+    const addToCart = async (tenantId: string, recipientPhone: string, productId: string, ms: any) => {
         try {
             const product = await productService.getProductById(productId, tenantId);
             if (!product) {
@@ -127,15 +131,11 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
                 return;
             }
 
-            const existingItem = state.cart.find(c => c.productId === productId);
-            let newCart = [...state.cart];
-            if (existingItem) {
-                newCart = newCart.map(c => c.productId === productId ? { ...c, quantity: c.quantity + 1 } : c);
-            } else {
-                newCart.push({ productId, quantity: 1, name: product.productName, price: product.price });
-            }
-
-            updateState(recipientPhone, { cart: newCart });
+            await cartService.addToCart(recipientPhone, tenantId, {
+                id: product._id.toString(),
+                name: product.productName,
+                price: product.price
+            }, 1);
 
             const bodyText = `Added *${product.productName}* to your cart! ✅`;
             const buttons = [
@@ -200,7 +200,7 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
             return sendWelcomeMenu(tenantId, senderPhone, ms);
         }
         if (normalizedText === 'cart' || selectedButtonId === 'view_cart') {
-            return sendCart(tenantId, senderPhone, state, ms);
+            return sendCart(tenantId, senderPhone, ms);
         }
         if (selectedButtonId === 'view_products' || normalizedText === 'products') {
             return sendProductList(tenantId, senderPhone, ms);
@@ -210,11 +210,12 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
             return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "What are you looking for? Type the product name:", senderUserId: 'AI_ASSISTANT' });
         }
         if (selectedButtonId === 'clear_cart') {
-            updateState(senderPhone, { cart: [] });
+            await cartService.clearCart(senderPhone, tenantId);
             return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Cart cleared! \uD83D\uDDD1\uFE0F\nReply 'menu' to start over.", senderUserId: 'AI_ASSISTANT' });
         }
         if (selectedButtonId === 'checkout' || normalizedText === 'checkout') {
-            if (state.cart.length === 0) {
+            const cart = await cartService.getCart(senderPhone, tenantId);
+            if (!cart || cart.items.length === 0) {
                 return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Your cart is empty! Cannot checkout.", senderUserId: 'AI_ASSISTANT' });
             }
             updateState(senderPhone, { currentView: 'CHECKOUT', checkoutStep: 'ADDRESS' });
@@ -224,7 +225,48 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
             return sendWelcomeMenu(tenantId, senderPhone, ms);
         }
 
+        if (selectedButtonId === 'book_appointment' || normalizedText.includes('book')) {
+            updateState(senderPhone, { currentView: 'BOOKING', bookingStep: 'SERVICE', bookingData: {} });
+            return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Let's book a consultation! What type of service are you looking for? (e.g., Marketing, Sales, Setup)", senderUserId: 'AI_ASSISTANT' });
+        }
+
         // State-specific intents
+        if (state.currentView === 'BOOKING') {
+            if (state.bookingStep === 'SERVICE') {
+                updateState(senderPhone, { bookingStep: 'DATE', bookingData: { serviceType: text } });
+                return ms.sendText({ tenantId, recipientPhone: senderPhone, text: `Great, a ${text} consultation. When would you like to book? (e.g., "Tomorrow at 2pm" or "Next Monday")`, senderUserId: 'AI_ASSISTANT' });
+            }
+            if (state.bookingStep === 'DATE') {
+                updateState(senderPhone, { bookingStep: 'CONFIRMATION', bookingData: { ...state.bookingData, appointmentDate: text } });
+                const bodyText = `Please confirm your appointment:\nService: ${state.bookingData?.serviceType}\nDate/Time: ${text}\n\nIs this correct?`;
+                const buttons = [
+                    { id: 'confirm_booking', title: '✅ Yes, book it' },
+                    { id: 'cancel_booking', title: '❌ No, cancel' }
+                ];
+                return ms.sendInteractive({ tenantId, recipientPhone: senderPhone, bodyText, buttons, senderUserId: 'AI_ASSISTANT' });
+            }
+            if (state.bookingStep === 'CONFIRMATION') {
+                if (selectedButtonId === 'confirm_booking' && appointmentService) {
+                    // Create appointment in DB
+                    try {
+                        await appointmentService.createAppointment(tenantId, {
+                            contactName: "WhatsApp User",
+                            contactPhone: senderPhone,
+                            serviceType: state.bookingData?.serviceType || 'Consultation',
+                            appointmentDate: new Date() // Mocking date parsing for MVP
+                        });
+                        updateState(senderPhone, { currentView: 'MENU', bookingData: {}, bookingStep: undefined });
+                        return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "🎉 Your appointment is confirmed! We will contact you soon.\nReply 'menu' to go back.", senderUserId: 'AI_ASSISTANT' });
+                    } catch (e) {
+                        return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Sorry, we couldn't book your appointment.", senderUserId: 'AI_ASSISTANT' });
+                    }
+                } else {
+                    updateState(senderPhone, { currentView: 'MENU', bookingData: {}, bookingStep: undefined });
+                    return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Booking cancelled. Reply 'menu' to go back.", senderUserId: 'AI_ASSISTANT' });
+                }
+            }
+        }
+
         if (state.currentView === 'SEARCHING') {
             return handleSearchInput(tenantId, senderPhone, normalizedText, ms);
         }
@@ -233,7 +275,7 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
             const productId = normalizedText.replace('add ', '').trim();
             // Validate it looks like a mongo id or just pass it to the service
             if (productId.length > 5) {
-                return addToCart(tenantId, senderPhone, productId, state, ms);
+                return addToCart(tenantId, senderPhone, productId, ms);
             }
         }
 
@@ -250,8 +292,37 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
         }
 
         if (state.currentView === 'CHECKOUT' && state.checkoutStep === 'PAYMENT' && (selectedButtonId === 'pay_cod' || selectedButtonId === 'pay_online')) {
-            updateState(senderPhone, { checkoutStep: 'CONFIRMATION', cart: [], currentView: 'MENU' }); // Reset after order
-            return ms.sendText({ tenantId, recipientPhone: senderPhone, text: `🎉 Order Confirmed!\nYour payment method: ${selectedButtonId === 'pay_cod' ? 'Cash on Delivery' : 'Online Payment'}.\nWe'll notify you when it ships.\n\nReply 'menu' to continue shopping.`, senderUserId: 'AI_ASSISTANT' });
+            const cart = await cartService.getCart(senderPhone, tenantId);
+            if (!cart || cart.items.length === 0) {
+                return ms.sendText({ tenantId, recipientPhone: senderPhone, text: "Your cart seems to be empty! Let's start over. Reply 'menu'.", senderUserId: 'AI_ASSISTANT' });
+            }
+
+            const totalAmount = cart.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+            // Create Order in DB
+            const orderOptions = {
+                customerName: "WhatsApp Customer", // Ideally collect this in the flow or via Phone mapping
+                phoneNumber: senderPhone,
+                products: cart.items.map(item => ({
+                    product: item.product,
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                totalAmount,
+                paymentStatus: selectedButtonId === 'pay_online' ? 'paid' : 'pending', // Simplify logic here
+                orderStatus: 'confirmed',
+                source: 'whatsapp',
+                tenantId: tenantId,
+                createdBy: 'AI_ASSISTANT'
+            };
+
+            const order = new Order(orderOptions);
+            await order.save();
+            await cartService.completeCart(senderPhone, tenantId);
+
+            updateState(senderPhone, { checkoutStep: 'CONFIRMATION', currentView: 'MENU' });
+            return ms.sendText({ tenantId, recipientPhone: senderPhone, text: `🎉 Order Confirmed!\nYour Order ID: *${order.orderId}*\nYour payment method: ${selectedButtonId === 'pay_cod' ? 'Cash on Delivery' : 'Online Payment'}.\nWe'll notify you when it ships.\n\nReply 'menu' to continue shopping.`, senderUserId: 'AI_ASSISTANT' });
         }
 
 

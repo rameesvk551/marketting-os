@@ -39,7 +39,17 @@ export function createConversationService(
         displayName?: string
     ) {
         let context = await conversationRepo.findByExternalId(externalId, channel, tenantId);
-        if (context && context.isSessionValid) return context;
+        if (context && context.isSessionValid) {
+            // Update last activity to mark as PENDING_ACTION
+            const updatedContext = ConversationContext.create({
+                ...context,
+                state: 'PENDING_ACTION',
+                lastActivityAt: new Date(),
+                updatedAt: new Date()
+            });
+            await conversationRepo.save(updatedContext);
+            return updatedContext;
+        }
 
         let identity: any = { linkedEntities: [] };
         if (channel === 'WHATSAPP') identity = await identifyPhone(tenantId, externalId);
@@ -56,7 +66,7 @@ export function createConversationService(
             participants: [],
             linkedEntities: identity.linkedEntities,
             primaryEntity: identity.linkedEntities[0],
-            state: 'IDLE',
+            state: 'IDLE', // Start as IDLE
             lastActivityAt: new Date(),
             sessionStartedAt: new Date(),
             sessionExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -109,6 +119,16 @@ export function createConversationService(
         return conversationRepo.save(updated);
     }
 
+    async function resolveEscalation(conversationId: string, tenantId: string) {
+        const context = await conversationRepo.findById(conversationId, tenantId);
+        if (!context) throw new Error('Conversation not found');
+        const updated = ConversationContext.create({
+            ...context, state: 'IDLE', isEscalated: false, agentId: undefined,
+            updatedAt: new Date(),
+        });
+        return conversationRepo.save(updated);
+    }
+
     async function getConversations(tenantId: string, filters: any) {
         const contexts = await conversationRepo.findAll(tenantId, filters);
         const dtos = await Promise.all(
@@ -122,7 +142,8 @@ export function createConversationService(
                     state: ctx.state, linkedEntityType: ctx.primaryEntity?.type,
                     linkedEntityId: ctx.primaryEntity?.entityId, lastMessageAt: ctx.lastActivityAt,
                     lastMessagePreview: lastMessage ? lastMessage.textBody : '', unreadCount,
-                    isEscalated: ctx.isEscalated, assignedToUserId: undefined, assignedToName: undefined,
+                    isEscalated: ctx.isEscalated, assignedToUserId: ctx.agentId, assignedToName: undefined,
+                    tags: ctx.tags, notes: ctx.notes
                 };
             })
         );
@@ -133,8 +154,22 @@ export function createConversationService(
         await conversationRepo.recordActivity(conversationId, tenantId);
     }
 
+    async function assignAgent(conversationId: string, tenantId: string, agentId: string | null) {
+        return conversationRepo.assignAgent(conversationId, tenantId, agentId);
+    }
+
+    async function updateTags(conversationId: string, tenantId: string, tags: string[]) {
+        return conversationRepo.updateTags(conversationId, tenantId, tags);
+    }
+
+    async function addNote(conversationId: string, tenantId: string, text: string, authorId: string) {
+        const note = { id: crypto.randomUUID(), text, authorId, createdAt: new Date() };
+        return conversationRepo.addNote(conversationId, tenantId, note);
+    }
+
     return {
         getOrCreateContext, linkToEntity, startWorkflow, updateWorkflowStep,
-        completeWorkflow, escalate, getConversations, recordActivity, identifyPhone,
+        completeWorkflow, escalate, resolveEscalation, getConversations, recordActivity, identifyPhone,
+        assignAgent, updateTags, addNote,
     };
 }

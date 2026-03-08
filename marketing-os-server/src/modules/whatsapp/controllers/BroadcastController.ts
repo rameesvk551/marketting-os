@@ -90,53 +90,57 @@ export function createBroadcastController(
                 }
             }
 
-            // ── Send in background ──
-            let successCount = 0;
-            let failureCount = 0;
+            // ── Send in background if NOT scheduled ──
+            if (!isScheduled) {
+                let successCount = 0;
+                let failureCount = 0;
 
-            (async () => {
-                for (const r of eligible) {
-                    try {
-                        const result = await messageService.sendTemplate({
-                            tenantId,
-                            recipientPhone: r.phone,
-                            templateName,
-                            language: language || 'en',
-                            variables: r.variables || {},
-                            senderUserId: userId,
-                        });
-                        if (result.success) successCount++;
-                        else failureCount++;
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    } catch (error) {
-                        failureCount++;
-                        console.error(`[Broadcast] Error sending to ${r.phone}:`, error);
+                (async () => {
+                    for (const r of eligible) {
+                        try {
+                            const result = await messageService.sendTemplate({
+                                tenantId,
+                                recipientPhone: r.phone,
+                                templateName,
+                                language: language || 'en',
+                                variables: r.variables || {},
+                                senderUserId: userId,
+                            });
+                            if (result.success) successCount++;
+                            else failureCount++;
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        } catch (error) {
+                            failureCount++;
+                            console.error(`[Broadcast] Error sending to ${r.phone}:`, error);
+                        }
                     }
-                }
-                console.log(
-                    `[Broadcast] Completed: ${successCount} sent, ${failureCount} failed, ${rejected.length} blocked (opt-in)`
-                );
+                    console.log(
+                        `[Broadcast] Completed: ${successCount} sent, ${failureCount} failed, ${rejected.length} blocked (opt-in)`
+                    );
 
-                // Update broadcast record with final counts
-                if (broadcastRepo) {
-                    try {
-                        await broadcastRepo.updateStatus(broadcastId, tenantId, {
-                            status: failureCount === eligible.length ? 'FAILED' : 'COMPLETED',
-                            sentCount: successCount,
-                            failedCount: failureCount,
-                            completedAt: new Date(),
-                        });
-                    } catch (err) {
-                        console.warn('[Broadcast] Failed to update record:', err);
+                    // Update broadcast record with final counts
+                    if (broadcastRepo) {
+                        try {
+                            await broadcastRepo.updateStatus(broadcastId, tenantId, {
+                                status: failureCount === eligible.length && failureCount > 0 ? 'FAILED' : 'COMPLETED',
+                                sentCount: successCount,
+                                failedCount: failureCount,
+                                completedAt: new Date(),
+                            });
+                        } catch (err) {
+                            console.warn('[Broadcast] Failed to update record:', err);
+                        }
                     }
-                }
-            })();
+                })();
+            }
 
             res.json({
                 success: true,
                 broadcastId,
-                message: `Broadcast started for ${eligible.length} recipients`,
-                jobId: 'background-processing',
+                message: isScheduled
+                    ? `Broadcast scheduled for ${eligible.length} recipients at ${scheduledAt}`
+                    : `Broadcast started for ${eligible.length} recipients`,
+                jobId: isScheduled ? 'scheduled-processing' : 'background-processing',
                 eligibleCount: eligible.length,
                 blockedRecipients: rejected,
             });

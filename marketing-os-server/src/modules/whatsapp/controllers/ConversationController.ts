@@ -114,8 +114,50 @@ export function createConversationController(
         try { const tenantId = req.context?.tenantId; if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; } const conversations = await conversationRepo.findPendingReview(tenantId); res.json({ data: conversations }); } catch (error) { next(error); }
     };
 
+    const resolveTicket = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const { id } = req.params;
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+            const updated = await conversationService.resolveEscalation(id, tenantId);
+            res.json({ data: updated });
+        } catch (error) { next(error); }
+    };
+
     const assignOperator = async (req: any, res: any, next: any) => {
-        try { const tenantId = req.context?.tenantId; if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; } res.json({ success: true, message: 'Operator assignment would be implemented with full conversation management' }); } catch (error) { next(error); }
+        try {
+            const tenantId = req.context?.tenantId;
+            const { id } = req.params;
+            const { agentId } = req.body;
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+            const updated = await conversationService.assignAgent(id, tenantId, agentId);
+            res.json({ data: updated });
+        } catch (error) { next(error); }
+    };
+
+    const updateTags = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const { id } = req.params;
+            const { tags } = req.body;
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+            if (!Array.isArray(tags)) { res.status(400).json({ error: 'tags must be an array' }); return; }
+            const updated = await conversationService.updateTags(id, tenantId, tags);
+            res.json({ data: updated });
+        } catch (error) { next(error); }
+    };
+
+    const addNote = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const userId = req.context?.userId;
+            const { id } = req.params;
+            const { text } = req.body;
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+            if (!text) { res.status(400).json({ error: 'text is required' }); return; }
+            const updated = await conversationService.addNote(id, tenantId, text, userId || 'system');
+            res.json({ data: updated });
+        } catch (error) { next(error); }
     };
 
     const close = async (req: any, res: any, next: any) => {
@@ -184,6 +226,54 @@ export function createConversationController(
         } catch (error) { next(error); }
     };
 
+    const getSegments = async (req: any, res: any, next: any) => {
+        try {
+            const tenantId = req.context?.tenantId;
+            const { tags } = req.query; // Expecting comma-separated tags e.g., VIP,New Customer
+            if (!tenantId) { res.status(401).json({ error: 'Tenant required' }); return; }
+
+            let tagFilter: string[] = [];
+            if (tags && typeof tags === 'string') {
+                tagFilter = tags.split(',').map(t => t.trim()).filter(Boolean);
+            }
+
+            // Find opt-ins that match these tags. 
+            // In a real DB, tags might be joining with Contact profiles.
+            // For now, we will do a basic query against optInRepo if tags are stored there, 
+            // or return an empty array if tags filtering is fully managed by contactService.
+
+            // To simulate segments, we will load conversations that have these tags and return unique phones.
+            // This is a minimal viable approach since "Contacts" might be tightly linked to conversations.
+
+            let query = `
+                SELECT DISTINCT phone_number, display_name 
+                FROM whatsapp_conversations 
+                WHERE tenant_id = $1
+            `;
+            const params: any[] = [tenantId];
+
+            if (tagFilter.length > 0) {
+                query += ` AND tags && $2::text[]`;
+                params.push(tagFilter);
+            }
+
+            if (pool) {
+                const result = await pool.query(query, params);
+
+                // Map to the format the broadcast UI expects
+                const formattedRecipients = result.rows.map(r => ({
+                    phone: r.phone_number,
+                    variables: { name: r.display_name || 'Customer' }
+                }));
+
+                res.json({ data: formattedRecipients });
+            } else {
+                res.json({ data: [] });
+            }
+
+        } catch (error) { next(error); }
+    };
+
     const sendConversationTemplate = async (req: any, res: any, next: any) => {
         try {
             const tenantId = req.context?.tenantId;
@@ -215,6 +305,6 @@ export function createConversationController(
         list, getById, sendMessage, sendInteractive, sendTemplate, linkEntity, escalate, getEscalated,
         getConversations: list, getConversation: getById,
         assignOperator, close, getMessages, broadcast, startNew, sendConversationTemplate,
-        generatePaymentLink,
+        generatePaymentLink, updateTags, addNote, getSegments, resolveTicket
     };
 }

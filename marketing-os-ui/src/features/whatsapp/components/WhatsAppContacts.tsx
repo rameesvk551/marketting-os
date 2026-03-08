@@ -9,7 +9,7 @@ import { useContacts } from '../hooks/useContacts';
 const { Title, Text } = Typography;
 
 const WhatsAppContacts: React.FC = () => {
-    const { searchText, setSearchText, selectedContact, setSelectedContact, contacts } = useContacts();
+    const { searchText, setSearchText, selectedContact, setSelectedContact, contacts, loading, importing, handleImportCsv } = useContacts();
 
     const columns = [
         { title: 'Name', dataIndex: 'name', key: 'name', render: (text: string) => <Text strong>{text}</Text> },
@@ -41,17 +41,34 @@ const WhatsAppContacts: React.FC = () => {
                 <Title level={4}>WhatsApp Contacts</Title>
                 <Space>
                     <Input
-                        placeholder="Search by phone..."
+                        placeholder="Search by phone or name..."
                         prefix={<SearchOutlined />}
                         style={{ width: 250 }}
                         value={searchText}
                         onChange={e => setSearchText(e.target.value)}
                     />
+                    <label htmlFor="csv-upload">
+                        <Button loading={importing} onClick={() => document.getElementById('csv-upload')?.click()}>
+                            Import CSV
+                        </Button>
+                    </label>
+                    <input
+                        type="file"
+                        id="csv-upload"
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                            if (e.target.files?.[0]) {
+                                handleImportCsv(e.target.files[0]);
+                                e.target.value = ''; // Reset to allow same file re-upload
+                            }
+                        }}
+                    />
                     <Button icon={<FilterOutlined />}>Filter</Button>
                 </Space>
             </div>
 
-            <Table columns={columns} dataSource={contacts} rowKey="id" pagination={{ pageSize: 10 }} />
+            <Table columns={columns} dataSource={contacts} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
 
             <Drawer
                 title="Contact Details"

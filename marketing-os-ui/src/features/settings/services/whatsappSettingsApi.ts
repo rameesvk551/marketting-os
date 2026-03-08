@@ -35,6 +35,12 @@ export const whatsappSettingsApi = {
     return data.data;
   },
 
+  /** Update auto-reply and business hours config */
+  saveAutoReplyConfig: async (updates: any): Promise<WhatsAppConnection> => {
+    const { data } = await client.put(`${BASE}/auto-reply`, updates);
+    return data.data;
+  },
+
   /** Test the current connection (verifies token + phone) */
   testConnection: async (): Promise<WhatsAppTestResult> => {
     const { data } = await client.post(`${BASE}/test`);

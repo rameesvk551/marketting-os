@@ -56,6 +56,12 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes) => {
             connected_at: DataTypes.DATE,
             last_sync_at: DataTypes.DATE,
             error_message: DataTypes.TEXT,
+            auto_greeting_message: DataTypes.TEXT,
+            away_message: DataTypes.TEXT,
+            business_hours: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
         },
         {
             sequelize,

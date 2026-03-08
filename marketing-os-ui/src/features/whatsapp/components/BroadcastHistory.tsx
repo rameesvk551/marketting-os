@@ -98,7 +98,7 @@ const BroadcastHistory: React.FC<BroadcastHistoryProps> = ({ onNewBroadcast }) =
             title: 'Created',
             dataIndex: 'created_at',
             key: 'created_at',
-            width: 160,
+            width: 140,
             render: (date: string) => (
                 <Tooltip title={dayjs(date).format('MMM D, YYYY h:mm A')}>
                     <Text type="secondary">{dayjs(date).fromNow()}</Text>
@@ -106,6 +106,17 @@ const BroadcastHistory: React.FC<BroadcastHistoryProps> = ({ onNewBroadcast }) =
             ),
             sorter: (a: any, b: any) => dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
             defaultSortOrder: 'descend' as const,
+        },
+        {
+            title: 'Scheduled For',
+            dataIndex: 'scheduled_at',
+            key: 'scheduled_at',
+            width: 140,
+            render: (date: string) => date ? (
+                <Tooltip title={dayjs(date).format('MMM D, YYYY h:mm A')}>
+                    <Text strong style={{ color: '#fa8c16' }}>{dayjs(date).fromNow()}</Text>
+                </Tooltip>
+            ) : <Text type="secondary">Immediate</Text>,
         },
         {
             title: 'Completed',

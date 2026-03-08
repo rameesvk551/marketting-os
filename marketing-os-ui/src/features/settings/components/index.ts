@@ -15,3 +15,5 @@ export {
   ConnectionStatus,
   ConnectionMethodSelector,
 } from './whatsapp';
+
+export { AutoReplySettings } from './AutoReplySettings';

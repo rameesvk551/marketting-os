@@ -4,13 +4,14 @@
 
 import React, { useState } from 'react';
 import { Typography, Spin, Alert, Space, Breadcrumb, Tabs } from 'antd';
-import { WhatsAppOutlined, HomeOutlined, SettingOutlined, LinkOutlined, ShopOutlined, AppstoreOutlined, BellOutlined, RocketOutlined, UserOutlined } from '@ant-design/icons';
+import { WhatsAppOutlined, HomeOutlined, SettingOutlined, LinkOutlined, ShopOutlined, AppstoreOutlined, BellOutlined, RocketOutlined, UserOutlined, MessageOutlined } from '@ant-design/icons';
 import { useWhatsAppConnection } from '../hooks';
 import {
   ConnectionMethodSelector,
   ManualConfigForm,
   EmbeddedSignup,
   ConnectionStatus,
+  AutoReplySettings,
 } from '../components';
 import type { WhatsAppConnectionMethod } from '../types';
 
@@ -43,6 +44,8 @@ const WhatsAppSettingsPage: React.FC = () => {
     isDisconnecting,
     regenerateVerifyToken,
     isRegenerating,
+    updateAutoReply,
+    isUpdatingAutoReply,
   } = useWhatsAppConnection();
 
   if (isLoading) {
@@ -150,6 +153,19 @@ const WhatsAppSettingsPage: React.FC = () => {
                     )}
                   </Space>
                 )}
+              </div>
+            )
+          },
+          {
+            key: 'auto_reply',
+            label: <span><MessageOutlined /> Auto Reply</span>,
+            children: (
+              <div style={{ marginTop: 16 }}>
+                <AutoReplySettings
+                  initialValues={connection}
+                  onSubmit={updateAutoReply}
+                  isSubmitting={isUpdatingAutoReply}
+                />
               </div>
             )
           },

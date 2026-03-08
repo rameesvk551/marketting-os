@@ -19,10 +19,10 @@ function mapToEntity(row: Record<string, unknown>): ConversationContext {
   const linkedEntities: LinkedEntity[] = (row.linked_entities as unknown[] || [])
     .filter(Boolean)
     .map((e: any) => ({
-      type: e.entity_type,
+      type: e.entity_type || 'LEAD',
       entityId: e.entity_id,
-      linkedAt: new Date(e.linked_at),
-      linkedBy: e.linked_by,
+      linkedAt: e.linked_at ? new Date(e.linked_at) : new Date(),
+      linkedBy: e.linked_by || 'system',
     }));
 
   const primaryEntity = linkedEntities.find((e: any) =>
@@ -35,44 +35,52 @@ function mapToEntity(row: Record<string, unknown>): ConversationContext {
     channel: (row.channel as CommunicationChannel) || 'WHATSAPP',
     externalId: (row.external_id as string) || (row.whatsapp_thread_id as string),
     primaryActor: {
-      actorType: row.primary_actor_type as any,
+      actorType: (row.primary_actor_type as any) || 'CUSTOMER',
       userId: row.primary_actor_user_id as string,
       employeeId: row.primary_actor_employee_id as string,
       contactId: row.primary_actor_contact_id as string,
       phoneNumber: row.primary_actor_phone as string,
-      displayName: row.primary_actor_name as string,
+      displayName: (row.primary_actor_name as string) || (row.primary_actor_phone as string) || 'Unknown',
     },
     participants: [],
     linkedEntities,
     primaryEntity,
-    state: row.state as ConversationState,
+    state: (row.state as ConversationState) || 'ACTIVE',
     workflowProgress: row.workflow_progress as any,
-    lastActivityAt: new Date(row.last_activity_at as string),
-    sessionStartedAt: new Date(row.session_started_at as string),
-    sessionExpiresAt: new Date(row.session_expires_at as string),
-    messageCount: row.message_count as number,
-    isOptedIn: row.is_opted_in as boolean,
-    isEscalated: row.is_escalated as boolean,
-    requiresHumanReview: row.requires_human_review as boolean,
-    providerMetadata: row.provider_metadata as Record<string, unknown>,
-    createdAt: new Date(row.created_at as string),
-    updatedAt: new Date(row.updated_at as string),
+    lastActivityAt: row.last_activity_at ? new Date(row.last_activity_at as string) : new Date(),
+    sessionStartedAt: row.session_started_at ? new Date(row.session_started_at as string) : new Date(),
+    sessionExpiresAt: row.session_expires_at ? new Date(row.session_expires_at as string) : new Date(Date.now() + 24*60*60*1000),
+    messageCount: (row.message_count as number) || 0,
+    isOptedIn: (row.is_opted_in as boolean) ?? true,
+    isEscalated: (row.is_escalated as boolean) ?? false,
+    requiresHumanReview: (row.requires_human_review as boolean) ?? false,
+    providerMetadata: (row.provider_metadata as Record<string, unknown>) || {},
+    agentId: row.agent_id as string,
+    tags: (row.tags as string[]) || [],
+    notes: (row.notes as any[]) || [],
+    createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
+    updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
   });
 }
 
 export function createConversationRepository(pool: Pool): IConversationRepository {
 
   async function findById(id: string, tenantId: string): Promise<ConversationContext | null> {
-    const row = await pool.query(
-      `SELECT c.*, 
-              json_agg(e.*) FILTER (WHERE e.id IS NOT NULL) as linked_entities
-       FROM whatsapp_conversations c
-       LEFT JOIN whatsapp_conversation_entities e ON c.id = e.conversation_id
-       WHERE c.id = $1 AND c.tenant_id = $2
-       GROUP BY c.id`,
-      [id, tenantId]
-    );
-    return row.rows[0] ? mapToEntity(row.rows[0]) : null;
+    try {
+      const row = await pool.query(
+        `SELECT c.*, 
+                json_agg(e.*) FILTER (WHERE e.id IS NOT NULL) as linked_entities
+         FROM whatsapp_conversations c
+         LEFT JOIN whatsapp_conversation_entities e ON c.id = e.conversation_id
+         WHERE c.id = $1 AND c.tenant_id = $2
+         GROUP BY c.id`,
+        [id, tenantId]
+      );
+      return row.rows[0] ? mapToEntity(row.rows[0]) : null;
+    } catch (error) {
+      console.error('Error finding conversation by ID:', error);
+      return null;
+    }
   }
 
   async function findByExternalId(
@@ -80,18 +88,23 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
     channel: CommunicationChannel,
     tenantId: string
   ): Promise<ConversationContext | null> {
-    const row = await pool.query(
-      `SELECT c.*, 
-              json_agg(e.*) FILTER (WHERE e.id IS NOT NULL) as linked_entities
-       FROM whatsapp_conversations c
-       LEFT JOIN whatsapp_conversation_entities e ON c.id = e.conversation_id
-       WHERE (c.external_id = $1 OR c.whatsapp_thread_id = $1)
-         AND (c.channel = $2 OR ($2 = 'WHATSAPP' AND c.channel IS NULL))
-         AND c.tenant_id = $3
-       GROUP BY c.id`,
-      [externalId, channel, tenantId]
-    );
-    return row.rows[0] ? mapToEntity(row.rows[0]) : null;
+    try {
+      const row = await pool.query(
+        `SELECT c.*, 
+                json_agg(e.*) FILTER (WHERE e.id IS NOT NULL) as linked_entities
+         FROM whatsapp_conversations c
+         LEFT JOIN whatsapp_conversation_entities e ON c.id = e.conversation_id
+         WHERE (c.external_id = $1 OR c.whatsapp_thread_id = $1)
+           AND (c.channel = $2 OR ($2 = 'WHATSAPP' AND c.channel IS NULL))
+           AND c.tenant_id = $3
+         GROUP BY c.id`,
+        [externalId, channel, tenantId]
+      );
+      return row.rows[0] ? mapToEntity(row.rows[0]) : null;
+    } catch (error) {
+      console.error('Error finding conversation by external ID:', error);
+      return null;
+    }
   }
 
   async function findByThreadId(threadId: string, tenantId: string): Promise<ConversationContext | null> {
@@ -212,6 +225,7 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
           state = $2, workflow_progress = $3, last_activity_at = $4,
           session_expires_at = $5, message_count = $6, is_opted_in = $7,
           is_escalated = $8, requires_human_review = $9, provider_metadata = $10,
+          agent_id = $11, tags = $12, notes = $13,
           updated_at = NOW()
         WHERE id = $1`,
         [
@@ -219,6 +233,7 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
           context.lastActivityAt, context.sessionExpiresAt, context.messageCount,
           context.isOptedIn, context.isEscalated, context.requiresHumanReview,
           JSON.stringify(context.providerMetadata),
+          context.agentId, JSON.stringify(context.tags), JSON.stringify(context.notes),
         ]
       );
     } else {
@@ -229,15 +244,17 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
           primary_actor_contact_id, primary_actor_phone, primary_actor_name,
           state, workflow_progress, last_activity_at, session_started_at,
           session_expires_at, message_count, is_opted_in, is_escalated,
-          requires_human_review, provider_metadata, created_at, updated_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+          requires_human_review, provider_metadata, agent_id, tags, notes, created_at, updated_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
         [
           context.id, context.tenantId, context.channel, context.externalId, context.externalId,
           context.primaryActor.actorType, context.primaryActor.userId, context.primaryActor.employeeId,
           context.primaryActor.contactId, context.primaryActor.phoneNumber, context.primaryActor.displayName,
           context.state, JSON.stringify(context.workflowProgress), context.lastActivityAt, context.sessionStartedAt,
           context.sessionExpiresAt, context.messageCount, context.isOptedIn, context.isEscalated,
-          context.requiresHumanReview, JSON.stringify(context.providerMetadata), context.createdAt, context.updatedAt,
+          context.requiresHumanReview, JSON.stringify(context.providerMetadata),
+          context.agentId, JSON.stringify(context.tags), JSON.stringify(context.notes),
+          context.createdAt, context.updatedAt,
         ]
       );
     }
@@ -286,6 +303,43 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
     );
   }
 
+  async function assignAgent(id: string, tenantId: string, agentId: string | null): Promise<ConversationContext> {
+    await pool.query(
+      `UPDATE whatsapp_conversations SET agent_id = $3, updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2`,
+      [id, tenantId, agentId]
+    );
+    const result = await findById(id, tenantId);
+    if (!result) throw new Error('Conversation not found');
+    return result;
+  }
+
+  async function updateTags(id: string, tenantId: string, tags: string[]): Promise<ConversationContext> {
+    await pool.query(
+      `UPDATE whatsapp_conversations SET tags = $3, updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2`,
+      [id, tenantId, JSON.stringify(tags)]
+    );
+    const result = await findById(id, tenantId);
+    if (!result) throw new Error('Conversation not found');
+    return result;
+  }
+
+  async function addNote(id: string, tenantId: string, note: { id: string; text: string; authorId: string; createdAt: Date }): Promise<ConversationContext> {
+    const result = await pool.query(
+      `UPDATE whatsapp_conversations 
+       SET notes = notes || $3::jsonb, updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2
+       RETURNING *`,
+      [id, tenantId, JSON.stringify([note])]
+    );
+
+    if (result.rowCount === 0) throw new Error('Conversation not found');
+
+    const fetchFull = await findById(id, tenantId);
+    return fetchFull!;
+  }
+
   async function expireStaleSessions(tenantId: string): Promise<number> {
     const result = await pool.query(
       `UPDATE whatsapp_conversations SET state = 'EXPIRED', updated_at = NOW()
@@ -310,5 +364,6 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
     findById, findByExternalId, findByThreadId, findActiveByPhone,
     findByLinkedEntity, findAll, findPendingReview, save, updateState,
     linkEntity, recordActivity, expireStaleSessions, countActive,
+    assignAgent, updateTags, addNote,
   };
 }

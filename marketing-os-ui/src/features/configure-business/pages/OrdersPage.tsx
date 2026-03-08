@@ -281,7 +281,7 @@ export const OrdersPage: React.FC = () => {
                                 },
                                 {
                                     title: 'Price',
-                                    dataIndex: 'priceAtPurchase',
+                                    dataIndex: 'price',
                                     key: 'price',
                                     render: (price) => `₹${price}`,
                                 },
@@ -293,7 +293,7 @@ export const OrdersPage: React.FC = () => {
                                 {
                                     title: 'Total',
                                     key: 'total',
-                                    render: (_, record) => <Text strong>₹{record.priceAtPurchase * record.quantity}</Text>,
+                                    render: (_, record) => <Text strong>₹{record.price * record.quantity}</Text>,
                                 },
                             ]}
                         />

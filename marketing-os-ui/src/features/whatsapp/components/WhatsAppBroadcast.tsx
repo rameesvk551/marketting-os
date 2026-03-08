@@ -123,12 +123,28 @@ const WhatsAppBroadcast: React.FC = () => {
                                             <Form.Item name="recipients" label="Phone Numbers" rules={[{ required: true, message: 'Please enter at least one phone number' }]} help="Enter phone numbers with country code (e.g., 15551234567), one per line.">
                                                 <TextArea rows={12} onChange={onRecipientsChange} placeholder={"15551234567\n919876543210"} style={{ fontFamily: 'monospace' }} />
                                             </Form.Item>
-                                        ) : (
+                                        ) : source === 'csv' ? (
                                             <div style={{ padding: 60, textAlign: 'center', background: '#fafafa', border: '2px dashed #d9d9d9', borderRadius: 12, cursor: 'pointer' }}>
                                                 <p className="ant-upload-drag-icon"><UploadOutlined style={{ fontSize: 48, color: '#1890ff', opacity: 0.8 }} /></p>
                                                 <Title level={4} style={{ marginTop: 16 }}>Click or drag CSV file to upload</Title>
                                                 <p className="ant-upload-hint">Support for massive bulk upload via CSV.</p>
                                                 <Button style={{ marginTop: 16 }}>Select File</Button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ padding: '24px', background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
+                                                <Title level={5} style={{ marginTop: 0 }}>Filter by Tags</Title>
+                                                <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                                                    Select one or more tags to send this broadcast only to contacts matching those specific attributes. Leave blank to target all opted-in contacts.
+                                                </Text>
+                                                <Form.Item name="audienceTags" tooltip="e.g. vip, new_customer, newsletter">
+                                                    <Select
+                                                        mode="tags"
+                                                        style={{ width: '100%' }}
+                                                        placeholder="Type a tag and press Enter"
+                                                        size="large"
+                                                        onChange={onRecipientsChange}
+                                                    />
+                                                </Form.Item>
                                             </div>
                                         );
                                     }}

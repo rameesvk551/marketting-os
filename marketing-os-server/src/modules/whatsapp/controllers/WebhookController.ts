@@ -6,9 +6,10 @@ export function createWebhookController(
     messageService: any,
     workflowOrchestrator: any,
     flowEngine: any,
-    tenantRepository: any,
+    waConfigRepo: any,
     auditRepo?: any,
     aiEcommerceAssistant?: any,
+    automationEngine?: any
 ) {
     const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'marketing-os-verify-token';
 
@@ -137,12 +138,12 @@ export function createWebhookController(
 
     async function handleBusinessHours(tenantId: string, contactIdentifier: string) {
         try {
-            const settings = await tenantRepository.getSettings(tenantId);
-            if (settings?.business_hours?.enabled) {
-                const isOpen = checkBusinessHours(settings.business_hours);
-                if (!isOpen) {
-                    console.log(`[Webhook] Message outside business hours for ${tenantId}. Triggering away flow.`);
-                    await flowEngine.triggerSystemFlow(tenantId, 'away', contactIdentifier);
+            const config = await waConfigRepo.findByTenantId(tenantId);
+            if (config && config.business_hours && Object.keys(config.business_hours).length > 0) {
+                const isOpen = checkBusinessHours(config.business_hours);
+                if (!isOpen && config.away_message) {
+                    console.log(`[Webhook] Message outside business hours for ${tenantId}. Sending away message.`);
+                    await messageService.sendText({ tenantId, recipientPhone: contactIdentifier, text: config.away_message, senderUserId: 'SYSTEM_AWAY' });
                 }
             }
         } catch (error) { console.error('[Webhook] Error checking business hours:', error); }
@@ -212,8 +213,22 @@ export function createWebhookController(
 
                     if (!result.isNewConversation) { await handleBusinessHours(tenantId, message.senderPhone); }
 
+                    let ruleMatched = false;
+                    if (automationEngine) {
+                        try {
+                            const eventData = {
+                                senderPhone: message.senderPhone,
+                                textBody: message.textContent?.body,
+                                mediaUrl: message.mediaContent?.downloadUrl
+                            };
+                            ruleMatched = await automationEngine.processEvent(tenantId, 'MESSAGE_RECEIVED', eventData);
+                        } catch (err) {
+                            console.error('[Webhook] AutomationEngine processEvent error:', err);
+                        }
+                    }
+
                     // Route to AI Assistant if available
-                    if (aiEcommerceAssistant) {
+                    if (aiEcommerceAssistant && !ruleMatched) {
                         console.log(`[Webhook] Routing message from ${message.senderPhone} to AI Assistant.`);
                         await aiEcommerceAssistant.handleMessage(
                             tenantId,
@@ -221,11 +236,17 @@ export function createWebhookController(
                             message.textContent?.body,
                             message.selectedButtonId || message.selectedListItemId
                         );
-                    } else if (result.isNewConversation) {
-                        console.log(`[Webhook] New conversation detected for ${message.senderPhone}. Triggering welcome flow.`);
-                        flowEngine.triggerSystemFlow(tenantId, 'welcome', message.senderPhone).catch((err: any) => {
-                            console.error('[Webhook] Failed to trigger welcome flow:', err);
-                        });
+                    } else if (result.isNewConversation && !ruleMatched) {
+                        const config = await waConfigRepo.findByTenantId(tenantId);
+                        if (config && config.auto_greeting_message) {
+                            console.log(`[Webhook] New conversation detected for ${message.senderPhone}. Sending auto greeting.`);
+                            await messageService.sendText({ tenantId, recipientPhone: message.senderPhone, text: config.auto_greeting_message, senderUserId: 'SYSTEM_GREETING' });
+                        } else {
+                            // Fallback to flowEngine if still used
+                            flowEngine.triggerSystemFlow(tenantId, 'welcome', message.senderPhone).catch((err: any) => {
+                                console.error('[Webhook] Failed to trigger welcome flow:', err);
+                            });
+                        }
                     }
                 }
                 return;

@@ -18,12 +18,12 @@ function mapToEntity(row: Record<string, unknown>): WhatsAppMessage {
     id: row.id as string,
     tenantId: row.tenant_id as string,
     conversationId: row.conversation_id as string,
-    providerMessageId: row.provider_message_id as string,
-    providerTimestamp: new Date(row.provider_timestamp as string),
-    direction: row.direction as any,
-    senderPhone: row.sender_phone as string,
-    recipientPhone: row.recipient_phone as string,
-    messageType: row.message_type as any,
+    providerMessageId: (row.provider_message_id as string) || '',
+    providerTimestamp: row.provider_timestamp ? new Date(row.provider_timestamp as string) : new Date(),
+    direction: (row.direction as any) || 'INBOUND',
+    senderPhone: (row.sender_phone as string) || '',
+    recipientPhone: (row.recipient_phone as string) || '',
+    messageType: (row.message_type as any) || 'TEXT',
     textContent: row.text_content as any,
     mediaContent: row.media_content as any,
     locationContent: row.location_content as any,
@@ -33,19 +33,19 @@ function mapToEntity(row: Record<string, unknown>): WhatsAppMessage {
     replyToMessageId: row.reply_to_message_id as string,
     selectedButtonId: row.selected_button_id as string,
     selectedListItemId: row.selected_list_item_id as string,
-    status: row.status as any,
-    statusTimestamps: row.status_timestamps as any,
+    status: (row.status as any) || 'DELIVERED',
+    statusTimestamps: (row.status_timestamps as any) || {},
     failureReason: row.failure_reason as string,
     linkedLeadId: row.linked_lead_id as string,
     linkedBookingId: row.linked_booking_id as string,
     linkedTripId: row.linked_trip_id as string,
     handledByUserId: row.handled_by_user_id as string,
-    isProcessed: row.is_processed as boolean,
+    isProcessed: (row.is_processed as boolean) ?? false,
     processingError: row.processing_error as string,
-    requiresResponse: row.requires_response as boolean,
-    idempotencyKey: row.idempotency_key as string,
-    createdAt: new Date(row.created_at as string),
-    updatedAt: new Date(row.updated_at as string),
+    requiresResponse: (row.requires_response as boolean) ?? true,
+    idempotencyKey: (row.idempotency_key as string) || '',
+    createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
+    updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
   });
 }
 
@@ -76,14 +76,19 @@ export function createMessageRepository(pool: Pool): IMessageRepository {
   }
 
   async function findByConversation(conversationId: string, tenantId: string, limit?: number, offset?: number): Promise<WhatsAppMessage[]> {
-    const rows = await pool.query(
-      `SELECT * FROM whatsapp_messages 
-       WHERE conversation_id = $1 AND tenant_id = $2
-       ORDER BY provider_timestamp DESC
-       LIMIT $3 OFFSET $4`,
-      [conversationId, tenantId, limit ?? 50, offset ?? 0]
-    );
-    return rows.rows.map(mapToEntity);
+    try {
+      const rows = await pool.query(
+        `SELECT * FROM whatsapp_messages 
+         WHERE conversation_id = $1 AND tenant_id = $2
+         ORDER BY provider_timestamp DESC
+         LIMIT $3 OFFSET $4`,
+        [conversationId, tenantId, limit ?? 50, offset ?? 0]
+      );
+      return rows.rows.map(mapToEntity);
+    } catch (error) {
+      console.error('Error finding messages by conversation:', error);
+      return [];
+    }
   }
 
   async function findAll(tenantId: string, filters?: MessageFilters): Promise<WhatsAppMessage[]> {

@@ -22,6 +22,7 @@ export function createRouter() {
         embeddedSignupController: container.embeddedSignupController,
         broadcastController: container.broadcastController,
         metaController: container.metaController,
+        appointmentController: container.appointmentController,
         optInRepo: container.optInRepo,
         authMiddleware: authMiddleware(),
         tenantMiddleware,

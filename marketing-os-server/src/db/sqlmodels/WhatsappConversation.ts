@@ -73,6 +73,18 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes) => {
                 type: DataTypes.JSONB,
                 defaultValue: {},
             },
+            agent_id: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            tags: {
+                type: DataTypes.JSONB,
+                defaultValue: [],
+            },
+            notes: {
+                type: DataTypes.JSONB,
+                defaultValue: [],
+            },
         },
         {
             sequelize,

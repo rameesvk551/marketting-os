@@ -67,6 +67,16 @@ export function useWhatsAppConnection() {
     },
   });
 
+  const updateAutoReplyMutation = useMutation({
+    mutationFn: (updates: any) => whatsappSettingsApi.saveAutoReplyConfig(updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: WA_SETTINGS_KEYS.connection });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.message || 'Failed to update auto-reply settings');
+    },
+  });
+
   const testConnectionMutation = useMutation({
     mutationFn: () => whatsappSettingsApi.testConnection(),
     onSuccess: (result) => {
@@ -132,6 +142,9 @@ export function useWhatsAppConnection() {
 
     updateManual: updateManualMutation.mutate,
     isUpdatingManual: updateManualMutation.isPending,
+
+    updateAutoReply: updateAutoReplyMutation.mutateAsync,
+    isUpdatingAutoReply: updateAutoReplyMutation.isPending,
 
     testConnection: testConnectionMutation.mutate,
     isTesting: testConnectionMutation.isPending,

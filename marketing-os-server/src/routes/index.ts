@@ -5,6 +5,10 @@ import { createRouter as createInstagramRouter } from '../modules/instagram/inst
 import { createRouter as createSettingsRouter } from '../modules/settings/settings.router.js';
 import { createStoreRouter } from '../modules/store/store.router.js';
 import { createRouter as createCatalogRouter } from '../modules/catalog/catalog.router.js';
+import { createRouter as createContactRouter } from '../modules/contacts/contacts.router.js';
+import { createOrderRouter } from '../modules/orders/order.routes.js';
+import { createProductRouter } from '../modules/products/product.routes.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -14,5 +18,6 @@ router.use('/instagram', createInstagramRouter());
 router.use('/catalog', createCatalogRouter());
 router.use('/settings', createSettingsRouter());
 router.use('/store', createStoreRouter());
+router.use('/contacts', createContactRouter());
 
 export default router;

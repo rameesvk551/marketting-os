@@ -50,12 +50,16 @@ import {
   createMetaController,
 } from './controllers/index.js';
 
+import { createSchedulerService } from './services/SchedulerService.js';
 import { createWhatsAppAnalyticsService } from './services/WhatsAppAnalyticsService.js';
 import { createAutomationEngine } from './services/AutomationEngine.js';
 import { createAIEcommerceAssistant } from './services/AIEcommerceAssistant.js';
+import { createAppointmentController } from './controllers/AppointmentController.js';
+import { AppointmentService } from './services/AppointmentService.js';
 
 import * as productService from '../products/product.service.js';
 import * as categoryService from '../categories/category.service.js';
+
 
 // Convert existing Mongo service to the standard interface expected by AI Assistant
 const productServicePlaceholder = {
@@ -98,6 +102,7 @@ export interface WhatsAppContainer {
   commandHandler: ReturnType<typeof createOperationsCommandHandler>;
   notificationService: ReturnType<typeof createNotificationService>;
   metaTemplateSyncService: ReturnType<typeof createMetaTemplateSyncService>;
+  appointmentService: AppointmentService;
 
   // Controllers
   webhookController: ReturnType<typeof createWebhookController>;
@@ -117,6 +122,9 @@ export interface WhatsAppContainer {
   instagramWebhookController: any;
   unifiedConversationController: any;
   aiEcommerceAssistant: any;
+  schedulerService: ReturnType<typeof createSchedulerService>;
+  appointmentController: ReturnType<typeof createAppointmentController>;
+  catalogController: any; // Assuming this is also new based on the return object
 }
 
 /**
@@ -133,9 +141,11 @@ export function createWhatsAppContainer(
     tripAssignmentRepo?: any;
     holdService?: any;
     contactService?: any;
+    db?: any; // Assuming db is passed in existingServices
   } = {}
 ): WhatsAppContainer {
   const config = getConfig();
+  const db = existingServices.db || {}; // Get db from existingServices
 
   // ============================================
   // REPOSITORIES
@@ -150,6 +160,11 @@ export function createWhatsAppContainer(
   const templateRepo = createTemplateRepository(pool);
   const waConfigRepo = createWhatsAppConfigRepository(pool);
   const auditLogRepo = createWhatsAppAuditLogRepository(pool);
+  const contactRepo = db['Contact']; // Assuming Contact repo is available via db
+  const cartRepo = db['Cart'];
+  const cartItemRepo = db['CartItem'];
+  const appointmentRepo = db['WhatsappAppointment'];
+  const automationRuleRepo = db['WhatsappAutomationRule'];
 
   // ============================================
   // PROVIDER (global fallback + tenant-aware factory)
@@ -240,6 +255,8 @@ export function createWhatsAppContainer(
     socketEmitter
   );
 
+  const appointmentService = new AppointmentService(appointmentRepo);
+
   const workflowOrchestrator = createWorkflowOrchestrator(
     conversationService,
     messageService,
@@ -285,13 +302,17 @@ export function createWhatsAppContainer(
     getSettings: async (tenantId: string) => null,
   };
 
-  // ============================================
-  // AI ASSISTANT
-  // ============================================
   const aiEcommerceAssistant = createAIEcommerceAssistant(
     messageService,
     productServicePlaceholder,
-    categoryServicePlaceholder
+    categoryServicePlaceholder,
+    appointmentService
+  );
+
+  const automationEngine = createAutomationEngine(
+    messageService,
+    conversationService,
+    pool
   );
 
   const webhookController = createWebhookController(
@@ -300,9 +321,10 @@ export function createWhatsAppContainer(
     messageService,
     workflowOrchestrator,
     flowEngine,
-    tenantRepository,
+    waConfigRepo,
     auditLogRepo,
-    aiEcommerceAssistant
+    aiEcommerceAssistant,
+    automationEngine
   );
 
   const conversationController = createConversationController(
@@ -324,11 +346,6 @@ export function createWhatsAppContainer(
   const analyticsService = createWhatsAppAnalyticsService(pool);
   const analyticsController = createWhatsAppAnalyticsController(analyticsService);
 
-  const automationEngine = createAutomationEngine(
-    messageService,
-    conversationService
-  );
-
   const automationController = createAutomationController(
     automationEngine,
     aiEcommerceAssistant
@@ -343,6 +360,12 @@ export function createWhatsAppContainer(
   const broadcastRepo = createBroadcastRepository(pool);
   const broadcastController = createBroadcastController(messageService, optInRepo, broadcastRepo);
   const metaController = createMetaController(metaService);
+  const appointmentController = createAppointmentController(appointmentService);
+  const catalogController: any = {}; // Placeholder for catalogController
+
+  // Initialize and start background scheduler
+  const schedulerService = createSchedulerService(pool, broadcastController, messageService, optInRepo, broadcastRepo);
+  schedulerService.start();
 
   // Instagram & Omnichannel controllers (stubs until modules exist)
   const instagramWebhookController: any = {
@@ -378,6 +401,7 @@ export function createWhatsAppContainer(
     metaTemplateSyncService,
     analyticsService,
     automationEngine,
+    appointmentService,
 
     // Controllers
     webhookController,
@@ -392,13 +416,18 @@ export function createWhatsAppContainer(
     metaController,
     instagramWebhookController,
     unifiedConversationController,
+    appointmentController,
+    catalogController,
 
     // New Flow Automation
     flowRepository,
     flowEngine,
 
     // AI eCommerce
-    aiEcommerceAssistant
+    aiEcommerceAssistant,
+
+    // Background Scheduler
+    schedulerService
   };
 }
 

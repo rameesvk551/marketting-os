@@ -14,6 +14,7 @@ import WhatsAppTemplates from '../components/WhatsAppTemplates';
 import WhatsAppBroadcast from '../components/WhatsAppBroadcast';
 import WhatsAppAnalytics from '../components/WhatsAppAnalytics';
 import WhatsAppContacts from '../components/WhatsAppContacts';
+import WhatsAppTickets from '../components/WhatsAppTickets';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
@@ -62,6 +63,15 @@ const WhatsAppDashboard: React.FC = () => {
                 </span>
             ),
             children: <WhatsAppAutomation />,
+        },
+        {
+            key: 'tickets',
+            label: (
+                <span style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 500 }}>
+                    <BarChartOutlined /> {!isMobile && 'Tickets'}
+                </span>
+            ),
+            children: <WhatsAppTickets />,
         },
         {
             key: 'analytics',

@@ -107,4 +107,18 @@ export interface IConversationRepository {
    * Count active conversations
    */
   countActive(tenantId: string): Promise<number>;
+  /**
+   * Assign an agent to the conversation
+   */
+  assignAgent(id: string, tenantId: string, agentId: string | null): Promise<ConversationContext>;
+
+  /**
+   * Update the tags of the conversation
+   */
+  updateTags(id: string, tenantId: string, tags: string[]): Promise<ConversationContext>;
+
+  /**
+   * Add an internal note to the conversation
+   */
+  addNote(id: string, tenantId: string, note: { id: string; text: string; authorId: string; createdAt: Date }): Promise<ConversationContext>;
 }

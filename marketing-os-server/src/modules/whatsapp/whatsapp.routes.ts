@@ -10,6 +10,7 @@ import {
   EmbeddedSignupController,
   BroadcastController,
   MetaController,
+  AppointmentController,
 } from './controllers/index.js';
 import { getConfig } from '../../config/index.js';
 
@@ -59,6 +60,7 @@ export function createWhatsAppRoutes(dependencies: {
   embeddedSignupController: EmbeddedSignupController;
   broadcastController: BroadcastController;
   metaController: MetaController;
+  appointmentController: AppointmentController;
   optInRepo: any; // For opt-in validation middleware
   authMiddleware: (req: any, res: any, next: any) => void;
   tenantMiddleware: (req: any, res: any, next: any) => void;
@@ -73,6 +75,7 @@ export function createWhatsAppRoutes(dependencies: {
     broadcastController,
     metaController,
     automationController,
+    appointmentController,
     optInRepo,
     authMiddleware,
     tenantMiddleware,
@@ -146,6 +149,11 @@ export function createWhatsAppRoutes(dependencies: {
     settingsController.updateManualConfig
   );
 
+  // Update auto-reply and business hours
+  router.put('/settings/auto-reply',
+    settingsController.updateAutoReply
+  );
+
   // Test current connection
   router.post('/settings/test',
     settingsController.testConnection
@@ -208,14 +216,29 @@ export function createWhatsAppRoutes(dependencies: {
     conversationController.getConversation
   );
 
+  // Get segments/contacts by tags
+  router.get('/contacts/segments',
+    conversationController.getSegments
+  );
+
   // Link entity to conversation
   router.post('/conversations/:id/link',
     conversationController.linkEntity
   );
 
   // Assign operator
-  router.post('/conversations/:id/assign',
+  router.put('/conversations/:id/assign',
     conversationController.assignOperator
+  );
+
+  // Update tags
+  router.put('/conversations/:id/tags',
+    conversationController.updateTags
+  );
+
+  // Add internal note
+  router.post('/conversations/:id/notes',
+    conversationController.addNote
   );
 
   // Escalate conversation
@@ -279,6 +302,34 @@ export function createWhatsAppRoutes(dependencies: {
 
   router.post('/automation/simulate',
     automationController.simulate
+  );
+
+  // ============================================
+  // TICKETS ROUTES
+  // ============================================
+
+  router.get('/tickets',
+    conversationController.getEscalated
+  );
+
+  router.post('/tickets/:id/resolve',
+    conversationController.resolveTicket
+  );
+
+  // ============================================
+  // APPOINTMENTS ROUTES
+  // ============================================
+
+  router.get('/appointments',
+    appointmentController.getAppointments
+  );
+
+  router.post('/appointments',
+    appointmentController.createAppointment
+  );
+
+  router.put('/appointments/:id/status',
+    appointmentController.updateStatus
   );
 
   // ============================================

@@ -7,6 +7,7 @@ export interface BroadcastPayload {
     templateName: string;
     language: string;
     recipients: Array<{ phone: string; variables?: any }>;
+    scheduledAt?: string;
 }
 
 export const broadcastService = {
@@ -22,4 +23,12 @@ export const broadcastService = {
         const { data } = await client.get(`/whatsapp/broadcast/${id}`);
         return data;
     },
+    getSegments: async (tenantId: string, tags: string[]) => {
+        const params = new URLSearchParams();
+        if (tags.length > 0) params.append('tags', tags.join(','));
+        const { data } = await client.get(`/whatsapp/contacts/segments?${params.toString()}`, {
+            headers: { 'x-tenant-id': tenantId }
+        });
+        return data.data; // Response is wrapped in { data: [] }
+    }
 };

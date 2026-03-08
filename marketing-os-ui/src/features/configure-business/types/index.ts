@@ -99,7 +99,7 @@ export interface ProductQuery {
 export interface OrderProduct {
     product: string | Product;
     quantity: number;
-    priceAtPurchase: number;
+    price: number;
 }
 
 export interface Order {

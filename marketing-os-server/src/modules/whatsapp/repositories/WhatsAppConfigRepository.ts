@@ -21,6 +21,9 @@ export interface WhatsAppConfigRow {
     webhook_verify_token: string | null;
     instagram_account_id: string | null;
     catalog_id: string | null;
+    auto_greeting_message: string | null;
+    away_message: string | null;
+    business_hours: any | null;
     features: Record<string, boolean>;
     rate_limits: Record<string, any>;
     connected_at: Date | null;
@@ -85,6 +88,9 @@ export function createWhatsAppConfigRepository(pool: Pool) {
         webhookVerifyToken?: string | null;
         instagramAccountId?: string | null;
         catalogId?: string | null;
+        autoGreetingMessage?: string | null;
+        awayMessage?: string | null;
+        businessHours?: any | null;
         features?: Record<string, boolean>;
         rateLimits?: Record<string, any>;
     }): Promise<WhatsAppConfigRow> {
@@ -94,8 +100,9 @@ export function createWhatsAppConfigRepository(pool: Pool) {
         access_token, phone_number_id, waba_id, business_id,
         phone_display, verified_name, quality_rating,
         business_name, webhook_verify_token, instagram_account_id, catalog_id,
+        auto_greeting_message, away_message, business_hours,
         features, rate_limits, connected_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW())
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
       ON CONFLICT (tenant_id)
       DO UPDATE SET
         credential_source = EXCLUDED.credential_source, status = EXCLUDED.status,
@@ -106,6 +113,9 @@ export function createWhatsAppConfigRepository(pool: Pool) {
         quality_rating = EXCLUDED.quality_rating, business_name = EXCLUDED.business_name,
         webhook_verify_token = COALESCE(EXCLUDED.webhook_verify_token, whatsapp_business_configs.webhook_verify_token),
         instagram_account_id = EXCLUDED.instagram_account_id, catalog_id = EXCLUDED.catalog_id,
+        auto_greeting_message = EXCLUDED.auto_greeting_message,
+        away_message = EXCLUDED.away_message,
+        business_hours = EXCLUDED.business_hours,
         features = COALESCE(EXCLUDED.features, whatsapp_business_configs.features),
         rate_limits = COALESCE(EXCLUDED.rate_limits, whatsapp_business_configs.rate_limits),
         connected_at = EXCLUDED.connected_at, updated_at = NOW()
@@ -117,6 +127,8 @@ export function createWhatsAppConfigRepository(pool: Pool) {
             config.phoneDisplay || null, config.verifiedName || null, config.qualityRating || null,
             config.businessName || null, config.webhookVerifyToken || null,
             config.instagramAccountId || null, config.catalogId || null,
+            config.autoGreetingMessage || null, config.awayMessage || null,
+            config.businessHours ? JSON.stringify(config.businessHours) : null,
             JSON.stringify(config.features || {}), JSON.stringify(config.rateLimits || {}),
             config.status === 'connected' ? new Date() : null,
         ]);
