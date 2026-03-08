@@ -7,7 +7,7 @@ import { validateRequired } from '../../utils/validateRequired.js';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
     const { tenantName, userName, email, password } = req.body;
-
+    //GG
     validateRequired({ tenantName, userName, email, password });
 
     const result = await authService.register({
