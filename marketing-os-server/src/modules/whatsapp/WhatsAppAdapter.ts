@@ -77,6 +77,7 @@ export function createWhatsAppAdapter(provider: IWhatsAppProvider) {
                 sections?: Array<{ title: string; rows: Array<{ id: string; title: string; description?: string }> }>;
                 catalog_id?: string;
                 product_retailer_id?: string;
+                thumbnail_product_retailer_id?: string;
             };
         }
     ): Promise<string> {
