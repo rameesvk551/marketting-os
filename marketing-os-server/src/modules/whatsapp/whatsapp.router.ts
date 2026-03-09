@@ -23,6 +23,7 @@ export function createRouter() {
         broadcastController: container.broadcastController,
         metaController: container.metaController,
         appointmentController: container.appointmentController,
+        catalogMessageController: container.catalogController,
         optInRepo: container.optInRepo,
         authMiddleware: authMiddleware(),
         tenantMiddleware,

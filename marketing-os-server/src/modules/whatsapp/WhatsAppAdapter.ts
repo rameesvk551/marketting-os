@@ -136,19 +136,64 @@ export function createWhatsAppAdapter(provider: IWhatsAppProvider) {
     async function sendInteractiveCatalogMessage(
         context: ConversationContext,
         bodyText: string = 'Browse our catalog!',
-        footerText?: string
+        footerText?: string,
+        thumbnailProductRetailerId?: string
     ): Promise<string> {
         return sendInteractive(context, {
             type: 'catalog_message',
             body: bodyText,
             footer: footerText,
-            action: {}
+            action: {
+                ...(thumbnailProductRetailerId
+                    ? { thumbnail_product_retailer_id: thumbnailProductRetailerId }
+                    : {}),
+            }
         });
+    }
+
+    async function sendInteractiveMultiProductMessage(
+        context: ConversationContext,
+        catalogId: string,
+        headerText: string,
+        bodyText: string,
+        sections: Array<{ title: string; product_items: Array<{ product_retailer_id: string }> }>,
+        footerText?: string
+    ): Promise<string> {
+        const interactiveMessage: any = {
+            type: 'interactive',
+            recipientPhone: context.externalId,
+            interactiveContent: {
+                type: 'PRODUCT_LIST',
+                header: headerText,
+                body: bodyText,
+                footer: footerText,
+                action: {
+                    catalog_id: catalogId,
+                    sections,
+                },
+            }
+        };
+
+        let result;
+        if ('sendInteractive' in provider) {
+            result = await (provider as any).sendInteractive(interactiveMessage);
+        } else {
+            result = await provider.sendMessage({
+                recipientPhone: context.externalId,
+                messageType: 'INTERACTIVE' as any,
+                interactiveContent: interactiveMessage.interactiveContent,
+            } as any);
+        }
+
+        if (!result.success) {
+            throw new Error(result.errorMessage || 'Failed to send WhatsApp multi-product message');
+        }
+        return result.providerMessageId!;
     }
 
     async function markAsRead(context: ConversationContext, messageId: string): Promise<void> {
         await provider.markAsRead(messageId);
     }
 
-    return { sendMessage, sendTemplate, sendMedia, sendInteractive, sendInteractiveProductMessage, sendInteractiveCatalogMessage, markAsRead };
+    return { sendMessage, sendTemplate, sendMedia, sendInteractive, sendInteractiveProductMessage, sendInteractiveCatalogMessage, sendInteractiveMultiProductMessage, markAsRead };
 }

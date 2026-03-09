@@ -55,7 +55,9 @@ import { createWhatsAppAnalyticsService } from './services/WhatsAppAnalyticsServ
 import { createAutomationEngine } from './services/AutomationEngine.js';
 import { createAIEcommerceAssistant } from './services/AIEcommerceAssistant.js';
 import { createAppointmentController } from './controllers/AppointmentController.js';
+import { createCatalogMessageController } from './controllers/CatalogMessageController.js';
 import { AppointmentService } from './services/AppointmentService.js';
+import { createWhatsAppCatalogService } from './services/WhatsAppCatalogService.js';
 
 import * as productService from '../products/product.service.js';
 import * as categoryService from '../categories/category.service.js';
@@ -103,6 +105,7 @@ export interface WhatsAppContainer {
   notificationService: ReturnType<typeof createNotificationService>;
   metaTemplateSyncService: ReturnType<typeof createMetaTemplateSyncService>;
   appointmentService: AppointmentService;
+  whatsappCatalogService: ReturnType<typeof createWhatsAppCatalogService>;
 
   // Controllers
   webhookController: ReturnType<typeof createWebhookController>;
@@ -124,7 +127,7 @@ export interface WhatsAppContainer {
   aiEcommerceAssistant: any;
   schedulerService: ReturnType<typeof createSchedulerService>;
   appointmentController: ReturnType<typeof createAppointmentController>;
-  catalogController: any; // Assuming this is also new based on the return object
+  catalogController: ReturnType<typeof createCatalogMessageController>;
 }
 
 /**
@@ -199,18 +202,35 @@ export function createWhatsAppContainer(
       // When tenantId is provided for WhatsApp, create a tenant-specific adapter
       // that uses the connected user's credentials from the DB
       if (tenantId && channel === 'WHATSAPP') {
+        // Lazily build a full tenant adapter that proxies ALL methods
+        const getTenantAdapter = async () => {
+          const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
+          return createWhatsAppAdapter(tenantProvider);
+        };
         return {
           async sendMessage(context: any, content: string, metadata?: any) {
-            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
-            return createWhatsAppAdapter(tenantProvider).sendMessage(context, content, metadata);
+            return (await getTenantAdapter()).sendMessage(context, content, metadata);
           },
           async sendTemplate(context: any, templateName: string, languageCode: string, variables: any) {
-            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
-            return createWhatsAppAdapter(tenantProvider).sendTemplate(context, templateName, languageCode, variables);
+            return (await getTenantAdapter()).sendTemplate(context, templateName, languageCode, variables);
+          },
+          async sendMedia(context: any, url: string, caption?: string, mediaType?: string) {
+            return (await getTenantAdapter()).sendMedia(context, url, caption, mediaType as any);
+          },
+          async sendInteractive(context: any, content: any) {
+            return (await getTenantAdapter()).sendInteractive(context, content);
+          },
+          async sendInteractiveProductMessage(context: any, catalogId: string, productRetailerId: string, bodyText?: string, footerText?: string) {
+            return (await getTenantAdapter()).sendInteractiveProductMessage(context, catalogId, productRetailerId, bodyText, footerText);
+          },
+          async sendInteractiveCatalogMessage(context: any, bodyText?: string, footerText?: string, thumbnailProductRetailerId?: string) {
+            return (await getTenantAdapter()).sendInteractiveCatalogMessage(context, bodyText, footerText, thumbnailProductRetailerId);
+          },
+          async sendInteractiveMultiProductMessage(context: any, catalogId: string, headerText: string, bodyText: string, sections: any[], footerText?: string) {
+            return (await getTenantAdapter()).sendInteractiveMultiProductMessage(context, catalogId, headerText, bodyText, sections, footerText);
           },
           async markAsRead(context: any, messageId: string) {
-            const tenantProvider = await tenantProviderFactory.getProviderForTenant(tenantId);
-            return createWhatsAppAdapter(tenantProvider).markAsRead(context, messageId);
+            return (await getTenantAdapter()).markAsRead(context, messageId);
           },
         };
       }
@@ -361,7 +381,15 @@ export function createWhatsAppContainer(
   const broadcastController = createBroadcastController(messageService, optInRepo, broadcastRepo);
   const metaController = createMetaController(metaService);
   const appointmentController = createAppointmentController(appointmentService);
-  const catalogController: any = {}; // Placeholder for catalogController
+
+  const whatsappCatalogService = createWhatsAppCatalogService(
+    tenantProviderFactory,
+    messageService,
+    productServicePlaceholder,
+    categoryServicePlaceholder,
+    config.whatsapp.meta?.apiVersion || 'v21.0',
+  );
+  const catalogController = createCatalogMessageController(whatsappCatalogService);
 
   // Initialize and start background scheduler
   const schedulerService = createSchedulerService(pool, broadcastController, messageService, optInRepo, broadcastRepo);
@@ -402,6 +430,7 @@ export function createWhatsAppContainer(
     analyticsService,
     automationEngine,
     appointmentService,
+    whatsappCatalogService,
 
     // Controllers
     webhookController,

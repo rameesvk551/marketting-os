@@ -163,7 +163,12 @@ export function createMessageService(
 
         let providerMessageId: string;
         if (dto.interactiveContent.type === 'CATALOG_MESSAGE') {
-            providerMessageId = await adapter.sendInteractiveCatalogMessage(context, dto.interactiveContent.body || 'Check out our products!');
+            providerMessageId = await adapter.sendInteractiveCatalogMessage(
+                context,
+                dto.interactiveContent.body || 'Check out our products!',
+                dto.interactiveContent.footer,
+                dto.interactiveContent.action?.thumbnail_product_retailer_id
+            );
         } else if (dto.interactiveContent.type === 'PRODUCT') {
             providerMessageId = await adapter.sendInteractiveProductMessage(
                 context,
@@ -171,9 +176,18 @@ export function createMessageService(
                 dto.interactiveContent.action?.product_retailer_id || '',
                 dto.interactiveContent.body || 'Product Details'
             );
+        } else if (dto.interactiveContent.type === 'PRODUCT_LIST') {
+            providerMessageId = await adapter.sendInteractiveMultiProductMessage(
+                context,
+                dto.interactiveContent.action?.catalog_id || '',
+                dto.interactiveContent.header || 'Products',
+                dto.interactiveContent.body || 'Browse our products',
+                dto.interactiveContent.action?.sections || [],
+                dto.interactiveContent.footer
+            );
         } else {
             // fallback generic interactive send
-            providerMessageId = await adapter.sendInteractive(context, dto.interactiveContent, { replyToMessageId: dto.replyToMessageId });
+            providerMessageId = await adapter.sendInteractive(context, dto.interactiveContent);
         }
 
         const message = WhatsAppMessage.create({

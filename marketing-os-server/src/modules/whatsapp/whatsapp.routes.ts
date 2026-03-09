@@ -11,6 +11,7 @@ import {
   BroadcastController,
   MetaController,
   AppointmentController,
+  CatalogMessageController,
 } from './controllers/index.js';
 import { getConfig } from '../../config/index.js';
 
@@ -61,6 +62,7 @@ export function createWhatsAppRoutes(dependencies: {
   broadcastController: BroadcastController;
   metaController: MetaController;
   appointmentController: AppointmentController;
+  catalogMessageController: CatalogMessageController;
   optInRepo: any; // For opt-in validation middleware
   authMiddleware: (req: any, res: any, next: any) => void;
   tenantMiddleware: (req: any, res: any, next: any) => void;
@@ -76,6 +78,7 @@ export function createWhatsAppRoutes(dependencies: {
     metaController,
     automationController,
     appointmentController,
+    catalogMessageController,
     optInRepo,
     authMiddleware,
     tenantMiddleware,
@@ -431,6 +434,70 @@ export function createWhatsAppRoutes(dependencies: {
   // Delete template
   router.delete('/templates/:id',
     templateController.delete
+  );
+
+  // ============================================
+  // CATALOG TEMPLATE & MESSAGE ROUTES
+  // ============================================
+
+  // Create a catalog template on Meta
+  router.post('/catalog-templates',
+    catalogMessageController.createCatalogTemplate
+  );
+
+  // Send an approved catalog template message
+  router.post('/catalog-templates/send',
+    sendMessageRateLimiter,
+    catalogMessageController.sendCatalogTemplate
+  );
+
+  // Send interactive catalog message (entire catalog)
+  router.post('/catalog-messages/send',
+    sendMessageRateLimiter,
+    catalogMessageController.sendCatalogMessage
+  );
+
+  // Send single-product message
+  router.post('/catalog-messages/send-product',
+    sendMessageRateLimiter,
+    catalogMessageController.sendSingleProduct
+  );
+
+  // Send multi-product message
+  router.post('/catalog-messages/send-products',
+    sendMessageRateLimiter,
+    catalogMessageController.sendMultiProduct
+  );
+
+  // Auto-build multi-product from categories and send
+  router.post('/catalog-messages/send-by-categories',
+    sendMessageRateLimiter,
+    catalogMessageController.sendProductsByCategories
+  );
+
+  // List products available for catalog messages
+  router.get('/catalog-products',
+    catalogMessageController.listCatalogProducts
+  );
+
+  // List categories for building sections
+  router.get('/catalog-categories',
+    catalogMessageController.listCatalogCategories
+  );
+
+  // Preview auto-built sections from categories
+  router.get('/catalog-sections/preview',
+    catalogMessageController.previewSections
+  );
+
+  // Get commerce settings (cart & catalog visibility)
+  router.get('/commerce-settings',
+    catalogMessageController.getCommerceSettings
+  );
+
+  // Update commerce settings
+  router.put('/commerce-settings',
+    catalogMessageController.updateCommerceSettings
   );
 
 

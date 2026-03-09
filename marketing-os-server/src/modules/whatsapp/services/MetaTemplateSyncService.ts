@@ -13,7 +13,7 @@ export interface MetaTemplateComponent {
         header_handle?: string[];
     };
     buttons?: Array<{
-        type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+        type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'CATALOG';
         text: string;
         url?: string;
         phone_number?: string;

@@ -10,6 +10,7 @@ export { createEmbeddedSignupController } from './EmbeddedSignupController.js';
 export { createBroadcastController } from './BroadcastController.js';
 export { createMetaController } from './MetaController.js';
 export { createAppointmentController } from './AppointmentController.js';
+export { createCatalogMessageController } from './CatalogMessageController.js';
 
 // Type aliases matching old class names for backward compatibility
 export type WebhookController = ReturnType<typeof import('./WebhookController.js').createWebhookController>;
@@ -23,3 +24,4 @@ export type EmbeddedSignupController = ReturnType<typeof import('./EmbeddedSignu
 export type BroadcastController = ReturnType<typeof import('./BroadcastController.js').createBroadcastController>;
 export type MetaController = ReturnType<typeof import('./MetaController.js').createMetaController>;
 export type AppointmentController = ReturnType<typeof import('./AppointmentController.js').createAppointmentController>;
+export type CatalogMessageController = ReturnType<typeof import('./CatalogMessageController.js').createCatalogMessageController>;
