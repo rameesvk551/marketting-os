@@ -9,6 +9,10 @@ export type EmitEventFn = (tenantId: string, conversationId: string, event: stri
 /** No-op emitter used when sockets are not wired yet */
 const noopEmit: EmitEventFn = () => { };
 
+/** Convert non-UUID user IDs (like 'SYSTEM', 'system') to null for database compatibility */
+const sanitizeUserId = (userId?: string): string | undefined =>
+    userId && !['system', 'SYSTEM'].includes(userId) ? userId : undefined;
+
 export function createMessageService(
     messageRepo: any, channelFactory: any, conversationService: any, timelineService: any,
     emitEvent: EmitEventFn = noopEmit,
@@ -94,7 +98,7 @@ export function createMessageService(
             tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
             direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
             messageType: 'TEXT', textContent: { body: dto.text }, status: 'SENT',
-            statusTimestamps: { sent: new Date() }, handledByUserId: dto.senderUserId,
+            statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
             isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
         });
         const saved = await messageRepo.save(message);
@@ -130,7 +134,7 @@ export function createMessageService(
             tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
             direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
             messageType: 'TEMPLATE', templateContent: { templateName: dto.templateName, language: dto.language || 'en', components: [] },
-            status: 'SENT', statusTimestamps: { sent: new Date() }, handledByUserId: dto.senderUserId,
+            status: 'SENT', statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
             isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
         });
         const saved = await messageRepo.save(message);
@@ -207,7 +211,7 @@ export function createMessageService(
             tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
             direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
             messageType: 'INTERACTIVE', interactiveContent: dto.interactiveContent, status: 'SENT',
-            statusTimestamps: { sent: new Date() }, handledByUserId: dto.senderUserId,
+            statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
             isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
         });
 
