@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Card, Typography, Switch, Form, Input, Button, Select, Space, Tabs, Table, Tag,
-    Divider, Modal, InputNumber, Alert, Collapse, Row, Col, Badge, Tooltip
+    Divider, Modal, InputNumber, Alert, Row, Col
 } from 'antd';
 import {
     ShoppingCartOutlined, ShopOutlined, SendOutlined, PlusOutlined,
@@ -12,16 +12,15 @@ import { useCatalog } from '../hooks/useCatalog';
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
-const { Panel } = Collapse;
 
 const WhatsAppCatalog: React.FC = () => {
     const {
         commerceSettings, settingsLoading, updateCommerceSettings,
-        products, categories, productsLoading, fetchProducts,
+        products, productsLoading,
         sending,
         createCatalogTemplate, sendCatalogTemplate,
         sendCatalogMessage, sendSingleProduct,
-        sendMultiProduct, sendProductsByCategories,
+        sendMultiProduct,
     } = useCatalog();
 
     const [catalogTemplateForm] = Form.useForm();

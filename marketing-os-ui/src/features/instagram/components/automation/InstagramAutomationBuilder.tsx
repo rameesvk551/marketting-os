@@ -191,7 +191,7 @@ const InstagramAutomationBuilder: React.FC = () => {
   const keywordFilter = useWatch({ control, name: 'trigger.keywordFilterEnabled' });
   const message = useWatch({ control, name: 'actions.0.message' });
 
-  const schema = useMemo(() => toSchema(values), [values]);
+  const schema = useMemo(() => toSchema(values as AutomationBuilderFormValues), [values]);
 
   useEffect(() => {
     const timer = window.setInterval(() => cycleSimulationStep(), 3500);
