@@ -8,6 +8,7 @@ export { default as InstagramDashboard } from './pages/InstagramDashboard';
 export { default as InstagramAccountCard } from './components/InstagramAccountCard';
 export { default as PostComposer } from './components/PostComposer';
 export { default as MediaLibrary } from './components/MediaLibrary';
+export { default as InstagramAutomationBuilder } from './components/automation/InstagramAutomationBuilder';
 
 // ── API ──
 export { instagramApi } from './api/instagramApi';

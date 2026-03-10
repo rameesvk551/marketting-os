@@ -97,6 +97,8 @@ const WhatsAppAutomation: React.FC = () => {
                         <Form.Item name="triggerType" label="When this happens..." rules={[{ required: true }]}>
                             <Select>
                                 <Option value="MESSAGE_RECEIVED">Message Received</Option>
+                                <Option value="ORDER_RECEIVED">Order Received (WhatsApp Cart)</Option>
+                                <Option value="CART_ABANDONED">Cart Abandoned</Option>
                                 <Option value="OPT_IN_STATUS_CHANGED">Opt-in Status Changed</Option>
                             </Select>
                         </Form.Item>
@@ -129,6 +131,10 @@ const WhatsAppAutomation: React.FC = () => {
                             <Select>
                                 <Option value="SEND_TEXT">Send Text Message</Option>
                                 <Option value="SEND_TEMPLATE">Send Template</Option>
+                                <Option value="SEND_CATALOG">Send Catalog Message</Option>
+                                <Option value="SEND_CATALOG_TEMPLATE">Send Catalog Template</Option>
+                                <Option value="SEND_SINGLE_PRODUCT">Send Single Product</Option>
+                                <Option value="SEND_MULTI_PRODUCT">Send Multi-Product</Option>
                                 <Option value="ADD_TAG">Add Tag</Option>
                                 <Option value="ASSIGN_AGENT">Assign Agent</Option>
                             </Select>
@@ -168,6 +174,63 @@ const WhatsAppAutomation: React.FC = () => {
                                                 ))}
                                             </Select>
                                         </Form.Item>
+                                    );
+                                }
+                                if (actionType === 'SEND_CATALOG') {
+                                    return (
+                                        <>
+                                            <Form.Item name={['actionConfig', 'bodyText']} label="Catalog Body Text" rules={[{ required: true }]}>
+                                                <Input.TextArea rows={2} placeholder="Browse our catalog and add items to purchase!" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'footerText']} label="Footer (Optional)">
+                                                <Input placeholder="Best deals on WhatsApp!" maxLength={60} />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'thumbnailProductRetailerId']} label="Thumbnail Product SKU (Optional)">
+                                                <Input placeholder="e.g., 2lc20305pt" />
+                                            </Form.Item>
+                                        </>
+                                    );
+                                }
+                                if (actionType === 'SEND_CATALOG_TEMPLATE') {
+                                    return (
+                                        <>
+                                            <Form.Item name={['actionConfig', 'templateName']} label="Catalog Template Name" rules={[{ required: true }]}>
+                                                <Input placeholder="intro_catalog_offer" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'language']} label="Language" initialValue="en_US">
+                                                <Input placeholder="en_US" />
+                                            </Form.Item>
+                                        </>
+                                    );
+                                }
+                                if (actionType === 'SEND_SINGLE_PRODUCT') {
+                                    return (
+                                        <>
+                                            <Form.Item name={['actionConfig', 'catalogId']} label="Catalog ID" rules={[{ required: true }]}>
+                                                <Input placeholder="Your Meta catalog ID" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'productRetailerId']} label="Product SKU" rules={[{ required: true }]}>
+                                                <Input placeholder="e.g., 2lc20305pt" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'bodyText']} label="Body Text (Optional)">
+                                                <Input placeholder="Check out this product!" />
+                                            </Form.Item>
+                                        </>
+                                    );
+                                }
+                                if (actionType === 'SEND_MULTI_PRODUCT') {
+                                    return (
+                                        <>
+                                            <Form.Item name={['actionConfig', 'catalogId']} label="Catalog ID" rules={[{ required: true }]}>
+                                                <Input placeholder="Your Meta catalog ID" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'headerText']} label="Header Text" rules={[{ required: true }]}>
+                                                <Input placeholder="Our Top Deals" />
+                                            </Form.Item>
+                                            <Form.Item name={['actionConfig', 'bodyText']} label="Body Text" rules={[{ required: true }]}>
+                                                <Input placeholder="Browse our best products!" />
+                                            </Form.Item>
+                                        </>
                                     );
                                 }
                                 return null;

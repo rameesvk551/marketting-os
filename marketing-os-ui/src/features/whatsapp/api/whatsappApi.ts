@@ -127,4 +127,56 @@ export const whatsappApi = {
         const { data } = await client.put(`/whatsapp/opt-in/${phone}`, updates);
         return data;
     },
+
+    // ── Catalog Templates ──
+    createCatalogTemplate: async (template: { name: string; language: string; bodyText: string; bodyExamples?: string[]; footerText?: string }) => {
+        const { data } = await client.post('/whatsapp/catalog-templates', template);
+        return data;
+    },
+    sendCatalogTemplate: async (payload: { recipientPhone: string; templateName: string; language: string; bodyParams?: Array<{ type: string; text: string }>; thumbnailProductRetailerId?: string }) => {
+        const { data } = await client.post('/whatsapp/catalog-templates/send', payload);
+        return data;
+    },
+
+    // ── Catalog Messages (Interactive) ──
+    sendCatalogMessage: async (payload: { recipientPhone: string; bodyText: string; footerText?: string; thumbnailProductRetailerId?: string }) => {
+        const { data } = await client.post('/whatsapp/catalog-messages/send', payload);
+        return data;
+    },
+    sendSingleProduct: async (payload: { recipientPhone: string; catalogId: string; productRetailerId: string; bodyText?: string; footerText?: string }) => {
+        const { data } = await client.post('/whatsapp/catalog-messages/send-product', payload);
+        return data;
+    },
+    sendMultiProduct: async (payload: { recipientPhone: string; catalogId: string; headerText: string; bodyText: string; footerText?: string; sections: Array<{ title: string; productRetailerIds: string[] }> }) => {
+        const { data } = await client.post('/whatsapp/catalog-messages/send-products', payload);
+        return data;
+    },
+    sendProductsByCategories: async (payload: { recipientPhone: string; catalogId: string; headerText?: string; bodyText?: string; footerText?: string }) => {
+        const { data } = await client.post('/whatsapp/catalog-messages/send-by-categories', payload);
+        return data;
+    },
+
+    // ── Catalog Products & Categories ──
+    getCatalogProducts: async (filters?: { search?: string; category?: string; page?: number; limit?: number }) => {
+        const { data } = await client.get('/whatsapp/catalog-products', { params: filters });
+        return data;
+    },
+    getCatalogCategories: async () => {
+        const { data } = await client.get('/whatsapp/catalog-categories');
+        return data;
+    },
+    previewCatalogSections: async (catalogId: string) => {
+        const { data } = await client.get('/whatsapp/catalog-sections/preview', { params: { catalogId } });
+        return data;
+    },
+
+    // ── Commerce Settings ──
+    getCommerceSettings: async () => {
+        const { data } = await client.get('/whatsapp/commerce-settings');
+        return data;
+    },
+    updateCommerceSettings: async (settings: { isCartEnabled?: boolean; isCatalogVisible?: boolean }) => {
+        const { data } = await client.put('/whatsapp/commerce-settings', settings);
+        return data;
+    },
 };

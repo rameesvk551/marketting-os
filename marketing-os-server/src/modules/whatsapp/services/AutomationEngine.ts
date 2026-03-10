@@ -3,7 +3,7 @@
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 
-export function createAutomationEngine(messageService: any, conversationService: any, pool: Pool) {
+export function createAutomationEngine(messageService: any, conversationService: any, pool: Pool, whatsappCatalogService?: any) {
     async function evaluateConditions(rule: any, data: any) {
         if (!rule.conditions || !Array.isArray(rule.conditions)) return true; // No conditions = trigger regardless
 
@@ -51,6 +51,50 @@ export function createAutomationEngine(messageService: any, conversationService:
                              WHERE tenant_id = $2 AND primary_actor_phone = $3`,
                             [action.config.agentId, tenantId, data.senderPhone]
                         );
+                        break;
+                    case 'SEND_CATALOG':
+                        if (whatsappCatalogService) {
+                            await whatsappCatalogService.sendCatalogMessage(tenantId, {
+                                recipientPhone: data.senderPhone,
+                                bodyText: action.config.bodyText || 'Browse our catalog!',
+                                footerText: action.config.footerText,
+                                thumbnailProductRetailerId: action.config.thumbnailProductRetailerId,
+                            });
+                        }
+                        break;
+                    case 'SEND_CATALOG_TEMPLATE':
+                        if (whatsappCatalogService) {
+                            await whatsappCatalogService.sendCatalogTemplate(tenantId, {
+                                recipientPhone: data.senderPhone,
+                                templateName: action.config.templateName,
+                                language: action.config.language || 'en_US',
+                                bodyParams: action.config.bodyParams,
+                                thumbnailProductRetailerId: action.config.thumbnailProductRetailerId,
+                            });
+                        }
+                        break;
+                    case 'SEND_SINGLE_PRODUCT':
+                        if (whatsappCatalogService) {
+                            await whatsappCatalogService.sendSingleProduct(tenantId, {
+                                recipientPhone: data.senderPhone,
+                                catalogId: action.config.catalogId,
+                                productRetailerId: action.config.productRetailerId,
+                                bodyText: action.config.bodyText,
+                                footerText: action.config.footerText,
+                            });
+                        }
+                        break;
+                    case 'SEND_MULTI_PRODUCT':
+                        if (whatsappCatalogService) {
+                            await whatsappCatalogService.sendMultiProduct(tenantId, {
+                                recipientPhone: data.senderPhone,
+                                catalogId: action.config.catalogId,
+                                headerText: action.config.headerText || 'Our Products',
+                                bodyText: action.config.bodyText || 'Check out our selection',
+                                footerText: action.config.footerText,
+                                sections: action.config.sections || [],
+                            });
+                        }
                         break;
                 }
             } catch (error) {

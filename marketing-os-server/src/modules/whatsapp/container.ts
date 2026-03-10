@@ -61,6 +61,7 @@ import { createWhatsAppCatalogService } from './services/WhatsAppCatalogService.
 
 import * as productService from '../products/product.service.js';
 import * as categoryService from '../categories/category.service.js';
+import * as orderService from '../orders/order.service.js';
 
 
 // Convert existing Mongo service to the standard interface expected by AI Assistant
@@ -329,10 +330,19 @@ export function createWhatsAppContainer(
     appointmentService
   );
 
+  const whatsappCatalogService = createWhatsAppCatalogService(
+    tenantProviderFactory,
+    messageService,
+    productServicePlaceholder,
+    categoryServicePlaceholder,
+    config.whatsapp.meta?.apiVersion || 'v21.0',
+  );
+
   const automationEngine = createAutomationEngine(
     messageService,
     conversationService,
-    pool
+    pool,
+    whatsappCatalogService
   );
 
   const webhookController = createWebhookController(
@@ -344,7 +354,9 @@ export function createWhatsAppContainer(
     waConfigRepo,
     auditLogRepo,
     aiEcommerceAssistant,
-    automationEngine
+    automationEngine,
+    orderService,
+    whatsappCatalogService
   );
 
   const conversationController = createConversationController(
@@ -382,13 +394,6 @@ export function createWhatsAppContainer(
   const metaController = createMetaController(metaService);
   const appointmentController = createAppointmentController(appointmentService);
 
-  const whatsappCatalogService = createWhatsAppCatalogService(
-    tenantProviderFactory,
-    messageService,
-    productServicePlaceholder,
-    categoryServicePlaceholder,
-    config.whatsapp.meta?.apiVersion || 'v21.0',
-  );
   const catalogController = createCatalogMessageController(whatsappCatalogService);
 
   // Initialize and start background scheduler

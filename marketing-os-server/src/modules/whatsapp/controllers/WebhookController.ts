@@ -9,7 +9,9 @@ export function createWebhookController(
     waConfigRepo: any,
     auditRepo?: any,
     aiEcommerceAssistant?: any,
-    automationEngine?: any
+    automationEngine?: any,
+    orderService?: any,
+    whatsappCatalogService?: any,
 ) {
     const webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'marketing-os-verify-token';
 
@@ -208,6 +210,66 @@ export function createWebhookController(
                         orderContent: (message as any).orderContent,
                         replyToMessageId: message.replyToMessageId, providerMetadata: message.providerMetadata,
                     });
+
+                    // ── Handle ORDER messages (WhatsApp Commerce cart submissions) ──
+                    if (message.messageType === 'ORDER' && (message as any).orderContent && orderService) {
+                        try {
+                            const orderContent = (message as any).orderContent;
+                            const productItems = orderContent.product_items || [];
+                            const contactName = message.providerMetadata?.contactName || message.senderPhone;
+
+                            const orderProducts = productItems.map((item: any) => ({
+                                product: item.product_retailer_id,
+                                productName: item.product_retailer_id,
+                                quantity: item.quantity || 1,
+                                price: parseFloat(item.item_price || '0'),
+                            }));
+                            const totalAmount = orderProducts.reduce(
+                                (sum: number, p: any) => sum + p.price * p.quantity, 0
+                            );
+
+                            const order = await orderService.createOrder(tenantId, 'WHATSAPP_WEBHOOK', {
+                                customerName: contactName,
+                                phoneNumber: message.senderPhone,
+                                products: orderProducts,
+                                totalAmount,
+                                source: 'whatsapp' as const,
+                                notes: orderContent.text || `WhatsApp catalog order from ${message.senderPhone}`,
+                            });
+
+                            console.log(`[Webhook] Auto-created order ${order.orderId} from WhatsApp cart (${productItems.length} items, total: ${totalAmount})`);
+
+                            await audit(tenantId, {
+                                eventType: 'order_created_from_whatsapp',
+                                actorType: 'WEBHOOK',
+                                actorPhone: message.senderPhone,
+                                entityType: 'order',
+                                entityId: order.orderId,
+                                payload: { catalog_id: orderContent.catalog_id, itemCount: productItems.length, totalAmount },
+                            });
+
+                            // Send order confirmation message
+                            const itemsList = orderProducts.map((p: any) => `${p.productName} x${p.quantity}`).join(', ');
+                            await messageService.sendText({
+                                tenantId,
+                                recipientPhone: message.senderPhone,
+                                text: `✅ Order received! Your order #${order.orderId} with ${productItems.length} item(s) (${itemsList}) totaling ${totalAmount.toFixed(2)} has been placed. We'll confirm it shortly!`,
+                                senderUserId: 'SYSTEM_ORDER',
+                            });
+
+                            // Fire ORDER_RECEIVED automation event
+                            if (automationEngine) {
+                                await automationEngine.processEvent(tenantId, 'ORDER_RECEIVED', {
+                                    senderPhone: message.senderPhone,
+                                    orderId: order.orderId,
+                                    totalAmount,
+                                    itemCount: productItems.length,
+                                });
+                            }
+                        } catch (orderErr) {
+                            console.error('[Webhook] Failed to create order from WhatsApp cart:', orderErr);
+                        }
+                    }
 
                     await handleConsentKeywords(tenantId, message.senderPhone, message.textContent?.body);
 

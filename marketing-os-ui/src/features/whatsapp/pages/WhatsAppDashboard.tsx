@@ -6,7 +6,8 @@ import {
     NotificationOutlined,
     RobotOutlined,
     BarChartOutlined,
-    ContactsOutlined
+    ContactsOutlined,
+    ShopOutlined
 } from '@ant-design/icons';
 import WhatsAppChats from '../components/WhatsAppChats';
 import WhatsAppAutomation from '../components/WhatsAppAutomation';
@@ -15,6 +16,7 @@ import WhatsAppBroadcast from '../components/WhatsAppBroadcast';
 import WhatsAppAnalytics from '../components/WhatsAppAnalytics';
 import WhatsAppContacts from '../components/WhatsAppContacts';
 import WhatsAppTickets from '../components/WhatsAppTickets';
+import WhatsAppCatalog from '../components/WhatsAppCatalog';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
@@ -90,6 +92,15 @@ const WhatsAppDashboard: React.FC = () => {
                 </span>
             ),
             children: <WhatsAppContacts />,
+        },
+        {
+            key: 'catalog',
+            label: (
+                <span style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 500 }}>
+                    <ShopOutlined /> {!isMobile && 'Catalog'}
+                </span>
+            ),
+            children: <WhatsAppCatalog />,
         },
     ];
 

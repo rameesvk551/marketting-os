@@ -7,12 +7,14 @@ import {
     InstagramOutlined,
     MessageOutlined,
     LineChartOutlined,
+    ThunderboltOutlined,
 } from '@ant-design/icons';
 import InstagramAccountCard from '../components/InstagramAccountCard';
 import PostComposer from '../components/PostComposer';
 import MediaLibrary from '../components/MediaLibrary';
 import SocialInbox from '../components/SocialInbox';
 import InstagramAnalytics from '../components/InstagramAnalytics';
+import InstagramAutomationBuilder from '../components/automation/InstagramAutomationBuilder';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
@@ -21,7 +23,7 @@ const { Title } = Typography;
 const IG_GRADIENT = 'linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%)';
 
 const InstagramDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState('automation');
     const { isMobile } = useResponsive();
     const {
         token: { colorBgContainer },
@@ -30,6 +32,19 @@ const InstagramDashboard: React.FC = () => {
     const tabLabelStyle = { fontSize: isMobile ? '13px' : '14px', fontWeight: 600 };
 
     const items = [
+        {
+            key: 'automation',
+            label: (
+                <span style={tabLabelStyle}>
+                    <ThunderboltOutlined style={{ marginRight: 6 }} />{!isMobile && 'Automation Builder'}
+                </span>
+            ),
+            children: (
+                <div style={{ padding: isMobile ? 8 : 12 }}>
+                    <InstagramAutomationBuilder />
+                </div>
+            ),
+        },
         {
             key: 'overview',
             label: (
