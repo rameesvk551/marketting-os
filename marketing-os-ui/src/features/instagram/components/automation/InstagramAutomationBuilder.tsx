@@ -1,19 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch, type UseFormRegister } from 'react-hook-form';
 import {
-  ReactFlow,
-  Background,
-  BackgroundVariant,
-  Controls,
-  MiniMap,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
-  type Connection,
-  type EdgeChange,
-  type NodeChange,
-} from '@xyflow/react';
-import {
   ArrowRight,
   BarChart3,
   Bot,
@@ -35,15 +22,13 @@ import {
   Save,
   Search,
   ShoppingBag,
-  Sparkles,
   Trash2,
   Users,
   Workflow,
   X,
   type LucideIcon,
 } from 'lucide-react';
-import '@xyflow/react/dist/style.css';
-import { CATALOG_PRODUCTS, COMMENT_EXAMPLES, INSTAGRAM_AUTOMATION_NAV, SIMULATION_STEPS, SUGGESTED_KEYWORDS } from './mockData';
+import { CATALOG_PRODUCTS, COMMENT_EXAMPLES, INSTAGRAM_AUTOMATION_NAV, SUGGESTED_KEYWORDS } from './mockData';
 import { useInstagramAutomationStore } from './useInstagramAutomationStore';
 import type {
   AutomationBuilderFormValues,
@@ -237,7 +222,7 @@ const InstagramAutomationBuilder: React.FC = () => {
   const onConnect = (connection: Connection) => setFlowEdges(addEdge({ ...connection, animated: true }, flowEdges));
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-slate-800 bg-[#05070d] text-slate-100 shadow-[0_20px_70px_rgba(0,0,0,0.55)]">
+    <div className="relative min-h-screen overflow-hidden bg-[#05070d] text-slate-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(56,189,248,0.16),transparent_36%),radial-gradient(circle_at_90%_8%,rgba(129,140,248,0.16),transparent_40%)]" />
       <div className="relative border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -249,7 +234,7 @@ const InstagramAutomationBuilder: React.FC = () => {
           <div className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-slate-300">{savedAt ? `Last saved ${savedAt}` : 'Unsaved changes'}</div>
         </div>
       </div>
-      <div className="relative grid min-h-[760px] grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_400px]">
+      <div className="relative grid min-h-[calc(100vh-88px)] grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_400px]">
         <aside className="border-b border-white/10 bg-[#070b16] px-4 py-5 xl:border-b-0 xl:border-r xl:border-white/10">
           <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-300/60 bg-lime-300 px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-lime-200"><Plus className="h-4 w-4" />New Automation</button>
           <div className="mt-6 space-y-1">
@@ -265,24 +250,6 @@ const InstagramAutomationBuilder: React.FC = () => {
           </div>
         </aside>
         <main className="order-3 border-t border-white/10 bg-[#090e1a] px-4 py-5 xl:order-2 xl:border-t-0 xl:px-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div><h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Preview Automation</h3><p className="text-sm text-slate-400">1. Comment 2. Detect keyword 3. Send DM 4. Catalog CTA</p></div>
-            <button onClick={() => cycleSimulationStep()} className="inline-flex items-center gap-2 rounded-xl border border-sky-300/30 bg-sky-400/15 px-3 py-2 text-sm text-sky-100 hover:bg-sky-400/20"><Sparkles className="h-4 w-4" />Advance</button>
-          </div>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {SIMULATION_STEPS.map((item, index) => {
-              const value = index + 1;
-              const active = value === simulationStep;
-              return <button key={item} onClick={() => setSimulationStep(value)} className={`rounded-full border px-3 py-1 text-xs ${active ? 'border-sky-300/50 bg-sky-400/20 text-sky-100' : 'border-white/10 text-slate-400 hover:text-slate-200'}`}>{value}. {item}</button>;
-            })}
-          </div>
-          <div className="mb-5 h-[160px] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70">
-            <ReactFlow proOptions={{ hideAttribution: true }} nodes={flowNodes} edges={flowEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
-              <MiniMap pannable zoomable />
-              <Controls showInteractive={false} />
-              <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#1e293b" />
-            </ReactFlow>
-          </div>
           <PhonePreview activePreviewTab={activePreviewTab} setActivePreviewTab={setActivePreviewTab} keywords={keywords.map((item) => item.value)} blocks={blocks} products={products} optional={optional} message={message} simulationStep={simulationStep} />
         </main>
         <aside className="order-2 border-t border-white/10 bg-[#060914] px-4 py-5 xl:order-3 xl:border-l xl:border-t-0 xl:border-white/10">

@@ -138,6 +138,14 @@ function App() {
 
               {/* Protected Routes */}
               <Route
+                path="/instagram"
+                element={
+                  <PrivateRoute>
+                    <InstagramDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
                 path="/"
                 element={
                   <PrivateRoute>
@@ -148,7 +156,6 @@ function App() {
                 <Route index element={<Navigate to="crm" replace />} />
                 <Route path="crm" element={<CRMDashboard />} />
                 <Route path="whatsapp" element={<WhatsAppDashboard />} />
-                <Route path="instagram" element={<InstagramDashboard />} />
                 <Route path="catalog" element={<CatalogDashboard />} />
                 <Route path="settings" element={<SettingsLayout />} />
                 <Route path="configure-business/*" element={<ConfigureBusinessLayout />} />
