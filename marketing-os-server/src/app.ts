@@ -13,7 +13,12 @@ export function createApp() {
     const app = express();
 
     // ── Global Middleware ──
-    app.use(cors({ origin: '*' }));
+    app.use(cors({
+        origin: config.server.corsOrigin === '*' ? '*' : config.server.corsOrigin.split(','),
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug'],
+    }));
     app.use(
         express.json({
             limit: '10mb',

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:        # Manual trigger option
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   DEPLOY_USER: ec2-user                              # Amazon Linux 2023 uses ec2-user
   DEPLOY_PATH: /home/ec2-user/marketting-os
 
@@ -183,10 +183,15 @@ jobs:
             sudo chown -R nginx:nginx /var/www/marketing-os
             rm -rf /tmp/frontend_extract /tmp/*-dist.tar.gz
 
-            # Install production dependencies
-            echo "📦 Installing dependencies..."
+            # Install production dependencies (skip if node_modules already provided)
+            echo "📦 Checking dependencies..."
             cd ${{ env.DEPLOY_PATH }}/marketing-os-server
-            npm ci --production
+            if [ -d node_modules ] && [ -f node_modules/.package-lock.json ]; then
+              echo "✓ node_modules already deployed from build artifact, skipping npm ci"
+            else
+              echo "Installing dependencies (fallback)..."
+              npm ci --omit=dev
+            fi
 
             # Run database migrations (if applicable)
             echo "🗄️ Running database migrations..."
