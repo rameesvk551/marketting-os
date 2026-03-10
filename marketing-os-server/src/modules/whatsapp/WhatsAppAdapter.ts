@@ -81,32 +81,33 @@ export function createWhatsAppAdapter(provider: IWhatsAppProvider) {
             };
         }
     ): Promise<string> {
-        const interactiveMessage: any = {
-            type: 'interactive',
-            recipientPhone: context.externalId,
-            interactiveContent: {
-                type: content.type,
-                body: { text: content.body },
-                header: content.header ? {
-                    type: content.header.type,
-                    text: content.header.text,
-                    image: content.header.mediaUrl ? { link: content.header.mediaUrl } : undefined,
-                    video: content.header.mediaUrl ? { link: content.header.mediaUrl } : undefined,
-                    document: content.header.mediaUrl ? { link: content.header.mediaUrl } : undefined,
-                } : undefined,
-                footer: content.footer ? { text: content.footer } : undefined,
-                action: content.action
-            }
+        // Build interactiveContent in the flat format that buildInteractivePayload expects:
+        // body/footer/header as strings, buttons/sections at top level
+        const interactiveContent: any = {
+            type: content.type.toUpperCase(),
+            body: content.body,
+            header: content.header?.text || undefined,
+            footer: content.footer || undefined,
+            // Lift buttons/sections to top level for BUTTON/LIST types
+            // Support both content.buttons (direct) and content.action.buttons (nested)
+            buttons: (content as any).buttons || content.action?.buttons,
+            sections: (content as any).sections || content.action?.sections,
+            // Keep action for PRODUCT/PRODUCT_LIST/CATALOG_MESSAGE types
+            action: content.action,
         };
 
         let result;
         if ('sendInteractive' in provider) {
-            result = await (provider as any).sendInteractive(interactiveMessage);
+            result = await (provider as any).sendInteractive({
+                type: 'interactive',
+                recipientPhone: context.externalId,
+                interactiveContent,
+            });
         } else {
             result = await provider.sendMessage({
                 recipientPhone: context.externalId,
-                messageType: 'interactive' as any,
-                ...interactiveMessage
+                messageType: 'INTERACTIVE',
+                interactiveContent,
             } as any);
         }
 

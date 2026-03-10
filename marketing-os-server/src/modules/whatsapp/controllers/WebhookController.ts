@@ -230,12 +230,22 @@ export function createWebhookController(
                     // Route to AI Assistant if available
                     if (aiEcommerceAssistant && !ruleMatched) {
                         console.log(`[Webhook] Routing message from ${message.senderPhone} to AI Assistant.`);
-                        await aiEcommerceAssistant.handleMessage(
-                            tenantId,
-                            message.senderPhone,
-                            message.textContent?.body,
-                            message.selectedButtonId || message.selectedListItemId
-                        );
+                        try {
+                            await aiEcommerceAssistant.handleMessage(
+                                tenantId,
+                                message.senderPhone,
+                                message.textContent?.body,
+                                message.selectedButtonId || message.selectedListItemId
+                            );
+                        } catch (aiErr) {
+                            console.error('[Webhook] AI Assistant error:', aiErr);
+                            // Send fallback text so user isn't left without a response
+                            try {
+                                await messageService.sendText({ tenantId, recipientPhone: message.senderPhone, text: 'Sorry, something went wrong. Please try again or type "menu" to start over.', senderUserId: 'SYSTEM' });
+                            } catch (fallbackErr) {
+                                console.error('[Webhook] Fallback message also failed:', fallbackErr);
+                            }
+                        }
                     } else if (result.isNewConversation && !ruleMatched) {
                         const config = await waConfigRepo.findByTenantId(tenantId);
                         if (config && config.auto_greeting_message) {

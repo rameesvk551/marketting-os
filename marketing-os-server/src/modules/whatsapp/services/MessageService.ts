@@ -158,10 +158,23 @@ export function createMessageService(
     }
 
     async function sendInteractive(dto: any) {
+        // Normalize: AIEcommerceAssistant sends { bodyText, buttons } instead of { interactiveContent }
+        if (!dto.interactiveContent && dto.bodyText) {
+            dto.interactiveContent = {
+                type: 'BUTTON',
+                body: dto.bodyText,
+                footer: dto.footerText,
+                buttons: (dto.buttons || []).map((b: any) => ({ id: b.id, title: b.title })),
+            };
+        }
+
         const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
         const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
 
         let providerMessageId: string;
+        if (!dto.interactiveContent) {
+            throw new Error('sendInteractive: missing interactiveContent and bodyText');
+        }
         if (dto.interactiveContent.type === 'CATALOG_MESSAGE') {
             providerMessageId = await adapter.sendInteractiveCatalogMessage(
                 context,

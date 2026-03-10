@@ -91,14 +91,17 @@ function buildInteractivePayload(content: NonNullable<SendMessageRequest['intera
   }
 
   if (content.type === 'CATALOG_MESSAGE') {
+    const catalogAction: Record<string, unknown> = { name: 'catalog_message' };
+    if (content.action?.thumbnail_product_retailer_id) {
+      catalogAction.parameters = {
+        thumbnail_product_retailer_id: content.action.thumbnail_product_retailer_id,
+      };
+    }
     return {
       type: 'catalog_message',
       body: { text: content.body },
       footer: content.footer ? { text: content.footer } : undefined,
-      action: {
-        // You can also add product_items in action to restrict to specific items
-        name: 'catalog_message',
-      }
+      action: catalogAction,
     };
   }
 

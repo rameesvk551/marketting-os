@@ -88,6 +88,7 @@ export interface InteractiveContent {
   action?: {
     catalog_id?: string;
     product_retailer_id?: string;
+    thumbnail_product_retailer_id?: string;
     sections?: Array<{
       title: string;
       product_items: Array<{
