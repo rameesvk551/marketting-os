@@ -200,6 +200,26 @@ const ManualConfigForm: React.FC<ManualConfigFormProps> = ({
         </Form.Item>
 
         <Form.Item
+          name="catalogId"
+          label={
+            <Space>
+              Meta Catalog ID
+              <Tooltip title="Found in Meta Commerce Manager → Your Catalog → Settings. Required for sending product cards via WhatsApp.">
+                <InfoCircleOutlined style={{ color: '#94A3B8' }} />
+              </Tooltip>
+            </Space>
+          }
+          rules={[
+            { pattern: /^\d+$/, message: 'Must be a numeric ID' },
+          ]}
+        >
+          <Input
+            prefix={<ShopOutlined style={{ color: '#94A3B8' }} />}
+            placeholder="e.g. 876543210987654"
+          />
+        </Form.Item>
+
+        <Form.Item
           name="webhookUrl"
           label={
             <Space>

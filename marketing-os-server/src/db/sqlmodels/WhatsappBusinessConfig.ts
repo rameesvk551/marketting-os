@@ -45,6 +45,8 @@ export default (sequelize: Sequelize, dataTypes: typeof DataTypes) => {
             quality_rating: DataTypes.STRING,
             business_name: DataTypes.STRING,
             webhook_verify_token: DataTypes.STRING,
+            instagram_account_id: DataTypes.STRING,
+            catalog_id: DataTypes.STRING,
             features: {
                 type: DataTypes.JSONB,
                 defaultValue: {},

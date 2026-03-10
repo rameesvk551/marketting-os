@@ -11,7 +11,7 @@ interface UserState {
     bookingStep?: 'SERVICE' | 'DATE' | 'CONFIRMATION';
 }
 
-export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any, appointmentService?: any) {
+export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any, appointmentService?: any, waConfigRepo?: any) {
     // In-memory state store for MVP. In production, this should be in Redis or Postgres.
     const userStates: Map<string, UserState> = new Map();
 
@@ -67,23 +67,66 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
 
             updateState(recipientPhone, { currentView: 'BROWSING' });
 
-            // For now, send a simple text list with a CTA to add to cart.
-            // In a full implementation, you'd use a Catalog message or Interactive List.
-            let text = "Here are our latest products:\n\n";
-            products.forEach((p: any, index: number) => {
-                text += `${index + 1}. *${p.productName}*\n`;
-                text += `   Price: ₹${p.price}\n`;
-                text += `   Reply with "add ${p._id}" to buy.\n\n`;
-            });
+            // Try to send as Meta Catalog interactive product list
+            let catalogId: string | null = null;
+            if (waConfigRepo) {
+                try {
+                    const config = await waConfigRepo.findByTenantId(tenantId);
+                    catalogId = config?.catalog_id || null;
+                } catch (e) {
+                    console.warn('[AIEcommerce] Failed to fetch catalog config:', e);
+                }
+            }
 
-            text += "Reply 'menu' to go back.";
+            if (catalogId) {
+                // Group products by category for multi-product sections
+                const categoryMap = new Map<string, { name: string; items: any[] }>();
+                for (const p of products) {
+                    const catName = p.categoryName || p.category?.name || 'Products';
+                    if (!categoryMap.has(catName)) {
+                        categoryMap.set(catName, { name: catName, items: [] });
+                    }
+                    categoryMap.get(catName)!.items.push(p);
+                }
 
-            await ms.sendText({
-                tenantId,
-                recipientPhone,
-                text,
-                senderUserId: 'AI_ASSISTANT'
-            });
+                const sections = Array.from(categoryMap.values()).map(cat => ({
+                    title: cat.name,
+                    product_items: cat.items.map((p: any) => ({
+                        product_retailer_id: p.sku || p._id.toString()
+                    }))
+                }));
+
+                await ms.sendInteractive({
+                    tenantId,
+                    recipientPhone,
+                    interactiveContent: {
+                        type: 'PRODUCT_LIST',
+                        header: 'Our Products',
+                        body: 'Browse our latest collection',
+                        action: {
+                            catalog_id: catalogId,
+                            sections
+                        }
+                    },
+                    senderUserId: 'AI_ASSISTANT'
+                });
+            } else {
+                // Fallback: send as text if catalog is not configured
+                let text = "Here are our latest products:\n\n";
+                products.forEach((p: any, index: number) => {
+                    text += `${index + 1}. *${p.productName}*\n`;
+                    text += `   Price: ₹${p.price}\n`;
+                    text += `   Reply with \"add ${p._id}\" to buy.\n\n`;
+                });
+                text += "Reply 'menu' to go back.";
+
+                await ms.sendText({
+                    tenantId,
+                    recipientPhone,
+                    text,
+                    senderUserId: 'AI_ASSISTANT'
+                });
+            }
         } catch (error) {
             console.error("Error fetching products:", error);
             await ms.sendText({ tenantId, recipientPhone, text: "Failed to load products.", senderUserId: "AI_ASSISTANT" });
