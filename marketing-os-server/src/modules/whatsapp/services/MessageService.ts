@@ -9,9 +9,12 @@ export type EmitEventFn = (tenantId: string, conversationId: string, event: stri
 /** No-op emitter used when sockets are not wired yet */
 const noopEmit: EmitEventFn = () => { };
 
-/** Convert non-UUID user IDs (like 'SYSTEM', 'system') to null for database compatibility */
+/** UUID v4 pattern */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Convert non-UUID user IDs to undefined for database compatibility. Only valid UUIDs are allowed. */
 const sanitizeUserId = (userId?: string): string | undefined =>
-    userId && !['system', 'SYSTEM'].includes(userId) ? userId : undefined;
+    userId && UUID_PATTERN.test(userId) ? userId : undefined;
 
 export function createMessageService(
     messageRepo: any, channelFactory: any, conversationService: any, timelineService: any,
