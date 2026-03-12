@@ -96,27 +96,45 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
                     }))
                 }));
 
-                await ms.sendInteractive({
-                    tenantId,
-                    recipientPhone,
-                    interactiveContent: {
-                        type: 'PRODUCT_LIST',
-                        header: 'Our Products',
-                        body: 'Browse our latest collection',
-                        action: {
-                            catalog_id: catalogId,
-                            sections
-                        }
-                    },
-                    senderUserId: 'AI_ASSISTANT'
-                });
+                try {
+                    await ms.sendInteractive({
+                        tenantId,
+                        recipientPhone,
+                        interactiveContent: {
+                            type: 'PRODUCT_LIST',
+                            header: 'Our Products',
+                            body: 'Browse our latest collection',
+                            action: {
+                                catalog_id: catalogId,
+                                sections
+                            }
+                        },
+                        senderUserId: 'AI_ASSISTANT'
+                    });
+                } catch (interactiveErr: any) {
+                    console.warn('[AIEcommerce] failed to send catalog interactive, falling back to text:', interactiveErr?.message);
+                    let text = "Here are our latest products:\n\n";
+                    products.forEach((p: any, index: number) => {
+                        text += `${index + 1}. *${p.productName}*\n`;
+                        text += `   Price: ₹${p.price}\n`;
+                        text += `   Reply with "add ${p._id}" to buy.\n\n`;
+                    });
+                    text += "Reply 'menu' to go back.";
+
+                    await ms.sendText({
+                        tenantId,
+                        recipientPhone,
+                        text,
+                        senderUserId: 'AI_ASSISTANT'
+                    });
+                }
             } else {
                 // Fallback: send as text if catalog is not configured
                 let text = "Here are our latest products:\n\n";
                 products.forEach((p: any, index: number) => {
                     text += `${index + 1}. *${p.productName}*\n`;
                     text += `   Price: ₹${p.price}\n`;
-                    text += `   Reply with \"add ${p._id}\" to buy.\n\n`;
+                    text += `   Reply with "add ${p._id}" to buy.\n\n`;
                 });
                 text += "Reply 'menu' to go back.";
 

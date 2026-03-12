@@ -1,5 +1,6 @@
 export type AutomationStatus = 'active' | 'draft';
 export type TriggerScope = 'specific' | 'next' | 'any';
+export type TriggerType = 'comment' | 'dm' | 'conversation_opener';
 export type PreviewTab = 'post' | 'comments' | 'dm';
 export type MessageBlockType = 'text' | 'button' | 'product_card' | 'product_catalog' | 'image' | 'cta';
 
@@ -10,6 +11,7 @@ export interface CatalogProduct {
   image: string;
   ctaLabel: string;
   description?: string;
+  url?: string;
 }
 
 export interface AutomationButton {
@@ -40,7 +42,7 @@ export interface InstagramAutomationSchema {
   id: string;
   name: string;
   trigger: {
-    type: 'comment';
+    type: TriggerType;
     postId?: string;
     keywords: string[];
     scope: TriggerScope;
@@ -58,7 +60,7 @@ export interface AutomationBuilderFormValues {
   name: string;
   status: AutomationStatus;
   trigger: {
-    type: 'comment';
+    type: TriggerType;
     scope: TriggerScope;
     postId: string;
     keywordFilterEnabled: boolean;

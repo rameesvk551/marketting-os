@@ -4,7 +4,7 @@ import { ConfigProvider } from 'antd';
 import { AppLayout } from './components/layout/AppLayout';
 import { LeadsPage as CRMDashboard } from './features/crm';
 import { WhatsAppDashboard } from './features/whatsapp';
-import { InstagramDashboard } from './features/instagram';
+import { InstagramAutomationPage, InstagramDashboard } from './features/instagram';
 import { CatalogDashboard } from './features/catalog';
 import { SettingsLayout } from './features/settings';
 import { ConfigureBusinessLayout } from './features/configure-business';
@@ -142,6 +142,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <InstagramDashboard />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/instagram/automation"
+                element={
+                  <PrivateRoute>
+                    <InstagramAutomationPage />
                   </PrivateRoute>
                 }
               />

@@ -17,6 +17,7 @@ export function createRouter() {
         webhookController: container.webhookController,
         inboxController: container.inboxController,
         analyticsController: container.analyticsController,
+        automationController: container.automationController,
         authMiddleware: authMiddleware(),
         tenantMiddleware,
     });

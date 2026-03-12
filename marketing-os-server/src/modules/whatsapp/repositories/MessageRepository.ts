@@ -159,7 +159,7 @@ export function createMessageRepository(pool: Pool): IMessageRepository {
         message.linkedLeadId, message.linkedBookingId, message.linkedTripId, message.handledByUserId,
         message.isProcessed, message.processingError, message.requiresResponse,
         message.idempotencyKey, message.createdAt, message.updatedAt,
-      ]
+      ].map(v => v === undefined ? null : v)
     );
     return message;
   }

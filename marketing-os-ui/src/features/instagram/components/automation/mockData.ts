@@ -5,6 +5,7 @@ export const SUGGESTED_KEYWORDS = ['link', 'shop', 'order', 'buy', 'price', 'dis
 export const INSTAGRAM_AUTOMATION_NAV = [
   { id: 'home', label: 'Home' },
   { id: 'automations', label: 'Automations' },
+  { id: 'inbox', label: 'Inbox' },
   { id: 'templates', label: 'Templates' },
   { id: 'content', label: 'My Content' },
   { id: 'contacts', label: 'Contacts' },
@@ -21,6 +22,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=700&q=80',
     description: 'Best seller',
+    url: 'https://yourstore.com/products/noir-scent',
   },
   {
     id: 'prod-2',
@@ -30,6 +32,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=700&q=80',
     description: 'Limited stock',
+    url: 'https://yourstore.com/products/silk-matte-lip',
   },
   {
     id: 'prod-3',
@@ -39,6 +42,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=700&q=80',
     description: 'Top rated',
+    url: 'https://yourstore.com/products/daily-glow-serum',
   },
   {
     id: 'prod-4',
@@ -48,6 +52,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?auto=format&fit=crop&w=700&q=80',
     description: 'New drop',
+    url: 'https://yourstore.com/products/minimalist-tote',
   },
   {
     id: 'prod-5',
@@ -57,6 +62,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=700&q=80',
     description: 'Premium cotton',
+    url: 'https://yourstore.com/products/classic-tee',
   },
   {
     id: 'prod-6',
@@ -66,6 +72,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     image:
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80',
     description: 'Fast moving',
+    url: 'https://yourstore.com/products/cloud-runner',
   },
 ];
 

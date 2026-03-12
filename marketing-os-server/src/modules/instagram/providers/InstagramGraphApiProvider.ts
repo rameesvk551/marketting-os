@@ -73,6 +73,36 @@ export interface IInstagramGraphApiProvider {
     deleteComment(commentId: string): Promise<{ success: boolean }>;
     sendPrivateReply(commentId: string, message: string): Promise<{ id: string }>;
     sendMessage(recipientId: string, text: string): Promise<{ message_id: string }>;
+    sendGenericTemplate(
+        recipientId: string,
+        elements: Array<{
+            title: string;
+            subtitle?: string;
+            image_url?: string;
+            default_action?: { type: 'web_url'; url: string };
+            buttons?: Array<{ type: 'web_url' | 'postback'; title: string; url?: string; payload?: string }>;
+        }>
+    ): Promise<{ message_id: string }>;
+    sendImage(recipientId: string, imageUrl: string): Promise<{ message_id: string }>;
+    sendButtonTemplate(
+        recipientId: string,
+        text: string,
+        buttons: Array<{ type: 'web_url' | 'postback'; title: string; url?: string; payload?: string }>
+    ): Promise<{ message_id: string }>;
+    // Product Catalog APIs (requires Instagram Shopping & catalog_management permission)
+    sendProductTemplate(
+        recipientId: string,
+        productIds: string[],  // Product IDs from your Meta Commerce Catalog
+        ctaText?: string
+    ): Promise<{ message_id: string }>;
+    getCatalogProducts(catalogId: string, limit?: number): Promise<Array<{
+        id: string;
+        name: string;
+        price: string;
+        image_url: string;
+        url: string;
+        retailer_id: string;
+    }>>;
 }
 
 const GRAPH_API_BASE = 'https://graph.instagram.com';
@@ -254,6 +284,112 @@ export function createInstagramGraphApiProvider(config: InstagramApiConfig): IIn
             const body = {
                 recipient: { id: recipientId },
                 message: { text }
+            };
+            const data = await graphFetch(
+                `${baseUrl}/${igUserId}/messages`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                }
+            );
+            return { message_id: data.message_id };
+        },
+
+        /**
+         * Send a Generic Template message with product cards
+         * Supports up to 10 elements per message
+         */
+        async sendGenericTemplate(
+            recipientId: string,
+            elements: Array<{
+                title: string;
+                subtitle?: string;
+                image_url?: string;
+                default_action?: {
+                    type: 'web_url';
+                    url: string;
+                };
+                buttons?: Array<{
+                    type: 'web_url' | 'postback';
+                    title: string;
+                    url?: string;
+                    payload?: string;
+                }>;
+            }>
+        ): Promise<{ message_id: string }> {
+            const body = {
+                recipient: { id: recipientId },
+                message: {
+                    attachment: {
+                        type: 'template',
+                        payload: {
+                            template_type: 'generic',
+                            elements: elements.slice(0, 10) // Instagram limits to 10 elements
+                        }
+                    }
+                }
+            };
+            const data = await graphFetch(
+                `${baseUrl}/${igUserId}/messages`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                }
+            );
+            return { message_id: data.message_id };
+        },
+
+        /**
+         * Send an image message
+         */
+        async sendImage(recipientId: string, imageUrl: string): Promise<{ message_id: string }> {
+            const body = {
+                recipient: { id: recipientId },
+                message: {
+                    attachment: {
+                        type: 'image',
+                        payload: {
+                            url: imageUrl,
+                            is_reusable: true
+                        }
+                    }
+                }
+            };
+            const data = await graphFetch(
+                `${baseUrl}/${igUserId}/messages`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                }
+            );
+            return { message_id: data.message_id };
+        },
+
+        /**
+         * Send a Button Template message (text with buttons)
+         */
+        async sendButtonTemplate(
+            recipientId: string,
+            text: string,
+            buttons: Array<{
+                type: 'web_url' | 'postback';
+                title: string;
+                url?: string;
+                payload?: string;
+            }>
+        ): Promise<{ message_id: string }> {
+            const body = {
+                recipient: { id: recipientId },
+                message: {
+                    attachment: {
+                        type: 'template',
+                        payload: {
+                            template_type: 'button',
+                            text,
+                            buttons: buttons.slice(0, 3) // Max 3 buttons
+                        }
+                    }
+                }
             };
             const data = await graphFetch(
                 `${baseUrl}/${igUserId}/messages`,

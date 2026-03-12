@@ -7,6 +7,7 @@ import { createContentPublishController } from './controllers/ContentPublishCont
 import { createInstagramWebhookController } from './controllers/WebhookController.js';
 import { createInboxController } from './controllers/InboxController.js';
 import { createAnalyticsController } from './controllers/AnalyticsController.js';
+import { createAutomationController } from './controllers/AutomationController.js';
 
 /** Rate limiter — pass-through stub (implement with Redis in production) */
 const apiRateLimiter = (_req: Request, _res: Response, next: NextFunction) => next();
@@ -20,6 +21,7 @@ export function createInstagramRoutes(dependencies: {
     webhookController: ReturnType<typeof createInstagramWebhookController>;
     inboxController: ReturnType<typeof createInboxController>;
     analyticsController: ReturnType<typeof createAnalyticsController>;
+    automationController?: ReturnType<typeof createAutomationController>;
     authMiddleware: (req: any, res: any, next: any) => void;
     tenantMiddleware: (req: any, res: any, next: any) => void;
 }): Router {
@@ -30,6 +32,7 @@ export function createInstagramRoutes(dependencies: {
         webhookController,
         inboxController,
         analyticsController,
+        automationController,
         authMiddleware,
         tenantMiddleware,
     } = dependencies;
@@ -99,6 +102,16 @@ export function createInstagramRoutes(dependencies: {
     // ── Analytics ──
     router.get('/analytics/:accountId', analyticsController.getAccountInsights);
     router.get('/analytics/:accountId/media', analyticsController.getMediaAnalytics);
+
+    // ── Automation Rules ──
+    if (automationController) {
+        router.get('/automation/rules', automationController.getRules);
+        router.get('/automation/rules/:ruleId', automationController.getRuleById);
+        router.post('/automation/rules', automationController.createRule);
+        router.put('/automation/rules/:ruleId', automationController.updateRule);
+        router.delete('/automation/rules/:ruleId', automationController.deleteRule);
+        router.patch('/automation/rules/:ruleId/status', automationController.toggleRuleStatus);
+    }
 
     // ── Health Check ──
     router.get('/health', async (_req, res) => {

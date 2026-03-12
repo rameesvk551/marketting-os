@@ -95,4 +95,105 @@ export const instagramApi = {
         const { data } = await client.get(`/instagram/analytics/${accountId}/media`, { params: { limit } });
         return data;
     },
+
+    // ── Automation Rules ──
+    getAutomationRules: async (accountId?: string) => {
+        const { data } = await client.get('/instagram/automation/rules', { params: { accountId } });
+        return data;
+    },
+    createAutomationRule: async (payload: {
+        accountId: string;
+        name: string;
+        trigger: {
+            type: 'comment' | 'dm' | 'conversation_opener';
+            keywords?: string[];
+            keywordFilterEnabled?: boolean;
+            scope?: string;
+            postId?: string;
+        };
+        optionalActions?: {
+            publicReply?: { enabled: boolean; message: string };
+            likeComment?: boolean;
+            replyPublic?: boolean;
+            sendOpeningDm?: boolean;
+            requireFollow?: boolean;
+            collectEmail?: boolean;
+        };
+        actions: Array<{
+            type: 'send_dm' | 'reply_comment';
+            message: string;
+            blocks?: Array<{
+                id: string;
+                type: string;
+                text?: string;
+                label?: string;
+                url?: string;
+                imageUrl?: string;
+                ctaLabel?: string;
+                productId?: string;
+            }>;
+            products?: Array<{
+                id: string;
+                name: string;
+                price: number;
+                image: string;
+                url?: string;
+                description?: string;
+            }>;
+        }>;
+    }) => {
+        const { data } = await client.post('/instagram/automation/rules', payload);
+        return data;
+    },
+    updateAutomationRule: async (ruleId: string, payload: {
+        name?: string;
+        trigger?: {
+            type: 'comment' | 'dm' | 'conversation_opener';
+            keywords?: string[];
+            keywordFilterEnabled?: boolean;
+            scope?: string;
+            postId?: string;
+        };
+        optionalActions?: {
+            publicReply?: { enabled: boolean; message: string };
+            likeComment?: boolean;
+            replyPublic?: boolean;
+            sendOpeningDm?: boolean;
+            requireFollow?: boolean;
+            collectEmail?: boolean;
+        };
+        actions?: Array<{
+            type: 'send_dm' | 'reply_comment';
+            message: string;
+            blocks?: Array<{
+                id: string;
+                type: string;
+                text?: string;
+                label?: string;
+                url?: string;
+                imageUrl?: string;
+                ctaLabel?: string;
+                productId?: string;
+            }>;
+            products?: Array<{
+                id: string;
+                name: string;
+                price: number;
+                image: string;
+                url?: string;
+                description?: string;
+            }>;
+        }>;
+    }) => {
+        const { data } = await client.put(`/instagram/automation/rules/${ruleId}`, payload);
+        return data;
+    },
+    deleteAutomationRule: async (ruleId: string) => {
+        const { data } = await client.delete(`/instagram/automation/rules/${ruleId}`);
+        return data;
+    },
+    toggleAutomationRuleStatus: async (ruleId: string, status: 'active' | 'paused' | 'draft') => {
+        const { data } = await client.patch(`/instagram/automation/rules/${ruleId}/status`, { status });
+        return data;
+    },
 };

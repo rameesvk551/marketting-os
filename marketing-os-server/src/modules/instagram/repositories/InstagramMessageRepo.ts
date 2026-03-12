@@ -11,7 +11,7 @@ import {
 
 export interface IInstagramMessageRepo {
     findByTenant(tenantId: string, limit?: number, offset?: number): Promise<InstagramMessage[]>;
-    findByConversation(conversationId: string, tenantId: string): Promise<InstagramMessage[]>;
+    findByConversation(tenantId: string, conversationId: string, limit?: number): Promise<InstagramMessage[]>;
     save(input: CreateInstagramMessageInput): Promise<InstagramMessage>;
     markDeleted(id: string, tenantId: string): Promise<void>;
 }
@@ -29,12 +29,13 @@ export function createInstagramMessageRepo(pool: Pool): IInstagramMessageRepo {
             return rows.map(mapRowToInstagramMessage);
         },
 
-        async findByConversation(conversationId: string, tenantId: string): Promise<InstagramMessage[]> {
+        async findByConversation(tenantId: string, conversationId: string, limit = 100): Promise<InstagramMessage[]> {
             const { rows } = await pool.query<InstagramMessageRow>(
                 `SELECT * FROM instagram_messages 
-                 WHERE conversation_id = $1 AND tenant_id = $2 AND is_deleted = false
-                 ORDER BY timestamp ASC`,
-                [conversationId, tenantId],
+                 WHERE tenant_id = $1 AND conversation_id = $2 AND is_deleted = false
+                 ORDER BY timestamp ASC
+                 LIMIT $3`,
+                [tenantId, conversationId, limit],
             );
             return rows.map(mapRowToInstagramMessage);
         },

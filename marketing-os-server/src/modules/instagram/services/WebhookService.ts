@@ -6,6 +6,7 @@ import { IInstagramAccountRepo } from '../repositories/InstagramAccountRepo.js';
 import { IInstagramMediaRepo } from '../repositories/InstagramMediaRepo.js';
 import { IInstagramCommentRepo } from '../repositories/InstagramCommentRepo.js';
 import { IInstagramMessageRepo } from '../repositories/InstagramMessageRepo.js';
+import type { IInstagramAutomationEngine } from './InstagramAutomationEngine.js';
 
 export interface InstagramWebhookEntry {
     id: string;
@@ -44,6 +45,7 @@ export interface InstagramWebhookEntry {
 export interface IWebhookService {
     processWebhook(body: any): Promise<void>;
     verifySignature(payload: Buffer, signature: string, appSecret: string): boolean;
+    setAutomationEngine(engine: IInstagramAutomationEngine): void;
 }
 
 export function createWebhookService(
@@ -52,7 +54,13 @@ export function createWebhookService(
     commentRepo: IInstagramCommentRepo,
     messageRepo: IInstagramMessageRepo
 ): IWebhookService {
+    // Late-bound automation engine (set after container is fully built to avoid circular deps)
+    let automationEngine: IInstagramAutomationEngine | null = null;
+
     return {
+        setAutomationEngine(engine: IInstagramAutomationEngine): void {
+            automationEngine = engine;
+        },
         async processWebhook(body: any): Promise<void> {
             const object = body.object;
 
@@ -108,6 +116,24 @@ export function createWebhookService(
                                                 commentsCount: (media.commentsCount || 0) + 1
                                             });
                                         }
+
+                                        // Trigger automation engine for this comment
+                                        if (automationEngine) {
+                                            try {
+                                                await automationEngine.processCommentEvent(account.tenantId, {
+                                                    accountId: account.id,
+                                                    commentId: change.value.id,
+                                                    igCommentId: change.value.id,
+                                                    mediaId: change.value.media?.id || '',
+                                                    igMediaId: change.value.media?.id || '',
+                                                    fromId: change.value.from?.id || '',
+                                                    fromUsername: change.value.from?.username || 'unknown',
+                                                    text: change.value.text,
+                                                });
+                                            } catch (autoErr: any) {
+                                                logger.error(`[IG Webhook] Automation processing failed for comment: ${autoErr.message}`);
+                                            }
+                                        }
                                     } catch (err: any) {
                                         if (!media) {
                                             logger.warn(`[IG Webhook] Skipping comment ${change.value.id} because media ${change.value.media?.id} not found locally for tenant ${account.tenantId}.`);
@@ -162,6 +188,38 @@ export function createWebhookService(
                                         isEcho: event.sender.id === igAccountId, // If sender is the IG page itself
                                         timestamp: new Date(event.timestamp), // Meta sends MS here usually
                                     });
+
+                                    // Check if this is the first message from this user (conversation opener)
+                                    if (automationEngine && event.sender.id !== igAccountId) {
+                                        const existingMessages = await messageRepo.findByConversation(account.tenantId, conversationId, 2);
+                                        const isFirstMessage = existingMessages.length <= 1; // Just the message we saved
+
+                                        if (isFirstMessage) {
+                                            // Trigger conversation opener automation
+                                            try {
+                                                await automationEngine.processConversationOpener(
+                                                    account.tenantId,
+                                                    account.id,
+                                                    event.sender.id
+                                                );
+                                                logger.info(`[IG Webhook] Triggered conversation opener for new user ${event.sender.id}`);
+                                            } catch (autoErr: any) {
+                                                logger.error(`[IG Webhook] Conversation opener automation failed: ${autoErr.message}`);
+                                            }
+                                        }
+
+                                        // Also process regular DM automations (keyword triggers)
+                                        try {
+                                            await automationEngine.processMessageEvent(account.tenantId, {
+                                                accountId: account.id,
+                                                messageId: event.message.mid,
+                                                senderId: event.sender.id,
+                                                text: event.message.text || '',
+                                            });
+                                        } catch (autoErr: any) {
+                                            logger.error(`[IG Webhook] Automation processing failed for message: ${autoErr.message}`);
+                                        }
+                                    }
                                 } catch (err: any) {
                                     logger.error(`[IG Webhook] Failed to save message for tenant ${account.tenantId}: ${err.message}`);
                                 }

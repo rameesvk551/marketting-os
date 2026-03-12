@@ -20,6 +20,7 @@ import { createContentPublishService, type IContentPublishService } from './serv
 import { createWebhookService, type IWebhookService } from './services/WebhookService.js';
 import { createInboxService, type IInboxService } from './services/InboxService.js';
 import { createAnalyticsService, type IAnalyticsService } from './services/AnalyticsService.js';
+import { createInstagramAutomationEngine, type IInstagramAutomationEngine } from './services/InstagramAutomationEngine.js';
 
 // Controllers
 import { createAccountController } from './controllers/AccountController.js';
@@ -27,6 +28,7 @@ import { createContentPublishController } from './controllers/ContentPublishCont
 import { createInstagramWebhookController } from './controllers/WebhookController.js';
 import { createInboxController } from './controllers/InboxController.js';
 import { createAnalyticsController } from './controllers/AnalyticsController.js';
+import { createAutomationController } from './controllers/AutomationController.js';
 
 /**
  * Instagram container - holds all Instagram-related dependencies
@@ -44,6 +46,7 @@ export interface InstagramContainer {
     webhookService: IWebhookService;
     inboxService: IInboxService;
     analyticsService: IAnalyticsService;
+    automationEngine: IInstagramAutomationEngine;
 
     // Controllers
     accountController: ReturnType<typeof createAccountController>;
@@ -51,6 +54,7 @@ export interface InstagramContainer {
     webhookController: ReturnType<typeof createInstagramWebhookController>;
     inboxController: ReturnType<typeof createInboxController>;
     analyticsController: ReturnType<typeof createAnalyticsController>;
+    automationController: ReturnType<typeof createAutomationController>;
 
     // Provider factory
     createProvider: (accessToken: string, igUserId: string) => IInstagramGraphApiProvider;
@@ -89,6 +93,10 @@ export function createInstagramContainer(pool: Pool): InstagramContainer {
     const webhookService = createWebhookService(accountRepo, mediaRepo, commentRepo, messageRepo);
     const inboxService = createInboxService(commentRepo, messageRepo, accountRepo, createProvider);
     const analyticsService = createAnalyticsService(accountRepo, mediaRepo, createProvider);
+    const automationEngine = createInstagramAutomationEngine(pool, inboxService, accountRepo);
+
+    // Late-bind automation engine to webhook service (avoid circular dependency)
+    webhookService.setAutomationEngine(automationEngine);
 
     // ── Controllers ──
     const accountController = createAccountController(authService, accountRepo);
@@ -96,6 +104,7 @@ export function createInstagramContainer(pool: Pool): InstagramContainer {
     const webhookController = createInstagramWebhookController(webhookService, verifyToken);
     const inboxController = createInboxController(inboxService);
     const analyticsController = createAnalyticsController(analyticsService);
+    const automationController = createAutomationController(automationEngine);
 
     return {
         accountRepo,
@@ -107,11 +116,13 @@ export function createInstagramContainer(pool: Pool): InstagramContainer {
         webhookService,
         inboxService,
         analyticsService,
+        automationEngine,
         accountController,
         contentPublishController,
         webhookController,
         inboxController,
         analyticsController,
+        automationController,
         createProvider,
     };
 }
