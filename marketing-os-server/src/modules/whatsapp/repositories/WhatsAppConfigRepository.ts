@@ -102,7 +102,7 @@ export function createWhatsAppConfigRepository(pool: Pool) {
         business_name, webhook_verify_token, instagram_account_id, catalog_id,
         auto_greeting_message, away_message, business_hours,
         features, rate_limits, connected_at, updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,NOW())
       ON CONFLICT (tenant_id)
       DO UPDATE SET
         credential_source = EXCLUDED.credential_source, status = EXCLUDED.status,
