@@ -49,7 +49,7 @@ function mapProductToMetaFormat(product: IProduct, storefrontUrl?: string): Reco
 
     const link = storefrontUrl
         ? `${storefrontUrl}/product/${product.slug}`
-        : `https://store.example.com/product/${product.slug}`;
+        : `${process.env.FRONTEND_URL || 'https://wayon.in'}/product/${product.slug}`;
 
     const mapped: Record<string, any> = {
         id: productId,
