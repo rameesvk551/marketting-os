@@ -400,5 +400,21 @@ export function createInstagramGraphApiProvider(config: InstagramApiConfig): IIn
             );
             return { message_id: data.message_id };
         },
+                async sendProductTemplate(
+                    recipientId: string,
+                    productIds: string[],
+                    ctaText?: string
+                ): Promise<{ message_id: string }> {
+                    // TODO: Implement actual Meta Commerce Catalog API call
+                    throw new Error("sendProductTemplate not implemented");
+                },
+
+                async getCatalogProducts(
+                    catalogId: string,
+                    limit = 10
+                ): Promise<Array<{ id: string; name: string; price: string; image_url: string; url: string; retailer_id: string }>> {
+                    // TODO: Implement actual Meta Commerce Catalog API call
+                    return [];
+                },
     };
 }
