@@ -328,7 +328,8 @@ export function createWhatsAppContainer(
     productServicePlaceholder,
     categoryServicePlaceholder,
     appointmentService,
-    waConfigRepo
+    waConfigRepo,
+    pool
   );
 
   const whatsappCatalogService = createWhatsAppCatalogService(

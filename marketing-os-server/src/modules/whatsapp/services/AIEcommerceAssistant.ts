@@ -11,7 +11,7 @@ interface UserState {
     bookingStep?: 'SERVICE' | 'DATE' | 'CONFIRMATION';
 }
 
-export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any, appointmentService?: any, waConfigRepo?: any) {
+export function createAIEcommerceAssistant(messageService: any, productService: any, categoryService: any, appointmentService?: any, waConfigRepo?: any, pool?: any) {
     // In-memory state store for MVP. In production, this should be in Redis or Postgres.
     const userStates: Map<string, UserState> = new Map();
 
@@ -75,6 +75,22 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
                     catalogId = config?.catalog_id || null;
                 } catch (e) {
                     console.warn('[AIEcommerce] Failed to fetch catalog config:', e);
+                }
+            }
+
+            // Fallback: check catalog_configs table if catalog_id not in whatsapp_business_configs
+            if (!catalogId && pool) {
+                try {
+                    const catalogResult = await pool.query(
+                        `SELECT catalog_id FROM catalog_configs WHERE tenant_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1`,
+                        [tenantId]
+                    );
+                    if (catalogResult.rows.length > 0) {
+                        catalogId = catalogResult.rows[0].catalog_id;
+                        console.log(`[AIEcommerce] Resolved catalog_id from catalog_configs: ${catalogId}`);
+                    }
+                } catch (e) {
+                    console.warn('[AIEcommerce] Failed to fetch from catalog_configs:', e);
                 }
             }
 
