@@ -98,8 +98,28 @@ export function createInstagramAuthService(appId: string, appSecret: string, api
             const fbFields = 'id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count';
             const igFields = 'id,username,name,biography,profile_picture_url,followers_count,follows_count,media_count,account_type';
 
-            const url = igUserId
-                ? `https://graph.facebook.com/${apiVersion}/${igUserId}?fields=${fbFields}&access_token=${accessToken}`
+            let targetIgUserId = igUserId;
+
+            // If an ID is provided, it might be a Facebook Page ID instead of an Instagram Account ID.
+            // Let's check if we can get the instagram_business_account from it.
+            if (targetIgUserId) {
+                try {
+                    const pageCheckUrl = `https://graph.facebook.com/${apiVersion}/${targetIgUserId}?fields=instagram_business_account&access_token=${accessToken}`;
+                    const pageCheckResponse = await fetch(pageCheckUrl);
+                    const pageCheckData: any = await pageCheckResponse.json();
+
+                    if (pageCheckData.instagram_business_account?.id) {
+                        logger.info(`[Instagram Auth] Resolved Page ID ${targetIgUserId} to Instagram Business Account ID ${pageCheckData.instagram_business_account.id}`);
+                        targetIgUserId = pageCheckData.instagram_business_account.id;
+                    }
+                } catch (e) {
+                    // Ignore errors here, fallback to using the provided ID directly
+                    logger.warn('[Instagram Auth] Failed to check if ID is a Page ID. Proceeding with original ID.');
+                }
+            }
+
+            const url = targetIgUserId
+                ? `https://graph.facebook.com/${apiVersion}/${targetIgUserId}?fields=${fbFields}&access_token=${accessToken}`
                 : `${GRAPH_API_BASE}/${apiVersion}/me?fields=${igFields}&access_token=${accessToken}`;
 
             const response = await fetch(url);
@@ -107,7 +127,17 @@ export function createInstagramAuthService(appId: string, appSecret: string, api
 
             if (!response.ok) {
                 logger.error('[Instagram Auth] Profile fetch failed:', data);
-                throw new Error(data.error?.message || 'Failed to fetch profile');
+
+                let errorMessage = data.error?.message || 'Failed to fetch profile';
+                
+                // Provide friendlier error messages for common Meta API issues
+                if (data.error?.code === 100 && data.error?.error_subcode === 33) {
+                    errorMessage = `The provided ID is invalid or does not support this operation. If you used a Page ID, ensure it is linked to an Instagram Business account.`;
+                } else if (errorMessage.includes('missing permissions') || errorMessage.includes('does not exist')) {
+                    errorMessage = `Access Denied: Please check your Facebook App permissions. Ensure the token has 'instagram_basic' and 'pages_show_list', AND that you explicitly selected the correct Instagram Account when generating the token.`;
+                }
+
+                throw new Error(errorMessage);
             }
 
             return {
