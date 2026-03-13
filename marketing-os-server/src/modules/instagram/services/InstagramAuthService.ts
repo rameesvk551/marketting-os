@@ -108,13 +108,15 @@ export function createInstagramAuthService(appId: string, appSecret: string, api
                     const pageCheckResponse = await fetch(pageCheckUrl);
                     const pageCheckData: any = await pageCheckResponse.json();
 
+                    logger.info('[Instagram Auth] Page Check Response:', pageCheckData);
+
                     if (pageCheckData.instagram_business_account?.id) {
                         logger.info(`[Instagram Auth] Resolved Page ID ${targetIgUserId} to Instagram Business Account ID ${pageCheckData.instagram_business_account.id}`);
                         targetIgUserId = pageCheckData.instagram_business_account.id;
                     }
                 } catch (e) {
                     // Ignore errors here, fallback to using the provided ID directly
-                    logger.warn('[Instagram Auth] Failed to check if ID is a Page ID. Proceeding with original ID.');
+                    logger.warn('[Instagram Auth] Failed to check if ID is a Page ID. Proceeding with original ID.', e);
                 }
             }
 
