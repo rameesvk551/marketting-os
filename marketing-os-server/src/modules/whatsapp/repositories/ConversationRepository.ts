@@ -97,7 +97,9 @@ export function createConversationRepository(pool: Pool): IConversationRepositor
          WHERE (c.external_id = $1 OR c.whatsapp_thread_id = $1)
            AND (c.channel = $2 OR ($2 = 'WHATSAPP' AND c.channel IS NULL))
            AND c.tenant_id = $3
-         GROUP BY c.id`,
+         GROUP BY c.id
+         ORDER BY c.last_activity_at DESC
+         LIMIT 1`,
         [externalId, channel, tenantId]
       );
       return row.rows[0] ? mapToEntity(row.rows[0]) : null;
