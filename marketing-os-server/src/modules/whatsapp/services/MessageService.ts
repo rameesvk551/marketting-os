@@ -94,153 +94,168 @@ export function createMessageService(
     }
 
     async function sendText(dto: any) {
-        const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
-        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
-        const providerMessageId = await adapter.sendMessage(context, dto.text, { replyToMessageId: dto.replyToMessageId });
-        const message = WhatsAppMessage.create({
-            tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
-            direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
-            messageType: 'TEXT', textContent: { body: dto.text }, status: 'SENT',
-            statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
-            isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
-        });
-        const saved = await messageRepo.save(message);
-        if (dto.linkTo) await conversationService.linkToEntity(context.id, dto.tenantId, dto.linkTo.type, dto.linkTo.entityId);
-        await timelineService.recordWhatsAppMessage(saved, context, 'OUTBOUND');
+        try {
+            const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
+            const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
+            const providerMessageId = await adapter.sendMessage(context, dto.text, { replyToMessageId: dto.replyToMessageId });
+            const message = WhatsAppMessage.create({
+                tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
+                direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
+                messageType: 'TEXT', textContent: { body: dto.text }, status: 'SENT',
+                statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
+                isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
+            });
+            const saved = await messageRepo.save(message);
+            if (dto.linkTo) await conversationService.linkToEntity(context.id, dto.tenantId, dto.linkTo.type, dto.linkTo.entityId);
+            await timelineService.recordWhatsAppMessage(saved, context, 'OUTBOUND');
 
-        // ── Real-time: push outbound message to all connected agents ──
-        emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
-            id: saved.id,
-            conversationId: context.id,
-            direction: 'OUTBOUND',
-            type: 'TEXT',
-            content: { body: dto.text },
-            recipientPhone: dto.recipientPhone,
-            timestamp: new Date().toISOString(),
-            status: 'SENT',
-        });
+            // ── Real-time: push outbound message to all connected agents ──
+            emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
+                id: saved.id,
+                conversationId: context.id,
+                direction: 'OUTBOUND',
+                type: 'TEXT',
+                content: { body: dto.text },
+                recipientPhone: dto.recipientPhone,
+                timestamp: new Date().toISOString(),
+                status: 'SENT',
+            });
 
-        emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
-            conversationId: context.id,
-            lastMessagePreview: dto.text?.slice(0, 80),
-            lastMessageAt: new Date().toISOString(),
-        });
+            emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
+                conversationId: context.id,
+                lastMessagePreview: dto.text?.slice(0, 80),
+                lastMessageAt: new Date().toISOString(),
+            });
 
-        return { success: true, messageId: saved.id, providerMessageId };
+            return { success: true, messageId: saved.id, providerMessageId };
+        } catch (error: any) {
+            console.error('[MessageService] sendText failed:', error.message);
+            return { success: false, error: error.message };
+        }
     }
 
     async function sendTemplate(dto: any) {
-        const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
-        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
-        const providerMessageId = await adapter.sendTemplate(context, dto.templateName, dto.language || 'en', dto.variables);
-        const message = WhatsAppMessage.create({
-            tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
-            direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
-            messageType: 'TEMPLATE', templateContent: { templateName: dto.templateName, language: dto.language || 'en', components: [] },
-            status: 'SENT', statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
-            isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
-        });
-        const saved = await messageRepo.save(message);
+        try {
+            const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
+            const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
+            const providerMessageId = await adapter.sendTemplate(context, dto.templateName, dto.language || 'en', dto.variables);
+            const message = WhatsAppMessage.create({
+                tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
+                direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
+                messageType: 'TEMPLATE', templateContent: { templateName: dto.templateName, language: dto.language || 'en', components: [] },
+                status: 'SENT', statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
+                isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
+            });
+            const saved = await messageRepo.save(message);
 
-        // ── Real-time: push template message to all connected agents ──
-        emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
-            id: saved.id,
-            conversationId: context.id,
-            direction: 'OUTBOUND',
-            type: 'TEMPLATE',
-            content: { body: `📋 Template: ${dto.templateName}` },
-            metadata: { templateName: dto.templateName },
-            recipientPhone: dto.recipientPhone,
-            timestamp: new Date().toISOString(),
-            status: 'SENT',
-        });
+            // ── Real-time: push template message to all connected agents ──
+            emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
+                id: saved.id,
+                conversationId: context.id,
+                direction: 'OUTBOUND',
+                type: 'TEMPLATE',
+                content: { body: `📋 Template: ${dto.templateName}` },
+                metadata: { templateName: dto.templateName },
+                recipientPhone: dto.recipientPhone,
+                timestamp: new Date().toISOString(),
+                status: 'SENT',
+            });
 
-        emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
-            conversationId: context.id,
-            lastMessagePreview: `📋 Template: ${dto.templateName}`,
-            lastMessageAt: new Date().toISOString(),
-        });
+            emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
+                conversationId: context.id,
+                lastMessagePreview: `📋 Template: ${dto.templateName}`,
+                lastMessageAt: new Date().toISOString(),
+            });
 
-        return { success: true, messageId: saved.id, providerMessageId };
+            return { success: true, messageId: saved.id, providerMessageId };
+        } catch (error: any) {
+            console.error('[MessageService] sendTemplate failed:', error.message);
+            return { success: false, error: error.message };
+        }
     }
 
     async function sendInteractive(dto: any) {
-        // Normalize: AIEcommerceAssistant sends { bodyText, buttons } instead of { interactiveContent }
-        if (!dto.interactiveContent && dto.bodyText) {
-            dto.interactiveContent = {
-                type: 'BUTTON',
-                body: dto.bodyText,
-                footer: dto.footerText,
-                buttons: (dto.buttons || []).map((b: any) => ({ id: b.id, title: b.title })),
-            };
+        try {
+            // Normalize: AIEcommerceAssistant sends { bodyText, buttons } instead of { interactiveContent }
+            if (!dto.interactiveContent && dto.bodyText) {
+                dto.interactiveContent = {
+                    type: 'BUTTON',
+                    body: dto.bodyText,
+                    footer: dto.footerText,
+                    buttons: (dto.buttons || []).map((b: any) => ({ id: b.id, title: b.title })),
+                };
+            }
+
+            const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
+            const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
+
+            let providerMessageId: string;
+            if (!dto.interactiveContent) {
+                throw new Error('sendInteractive: missing interactiveContent and bodyText');
+            }
+            if (dto.interactiveContent.type === 'CATALOG_MESSAGE') {
+                providerMessageId = await adapter.sendInteractiveCatalogMessage(
+                    context,
+                    dto.interactiveContent.body || 'Check out our products!',
+                    dto.interactiveContent.footer,
+                    dto.interactiveContent.action?.thumbnail_product_retailer_id
+                );
+            } else if (dto.interactiveContent.type === 'PRODUCT') {
+                providerMessageId = await adapter.sendInteractiveProductMessage(
+                    context,
+                    dto.interactiveContent.action?.catalog_id || '',
+                    dto.interactiveContent.action?.product_retailer_id || '',
+                    dto.interactiveContent.body || 'Product Details'
+                );
+            } else if (dto.interactiveContent.type === 'PRODUCT_LIST') {
+                providerMessageId = await adapter.sendInteractiveMultiProductMessage(
+                    context,
+                    dto.interactiveContent.action?.catalog_id || '',
+                    dto.interactiveContent.header || 'Products',
+                    dto.interactiveContent.body || 'Browse our products',
+                    dto.interactiveContent.action?.sections || [],
+                    dto.interactiveContent.footer
+                );
+            } else {
+                // fallback generic interactive send
+                providerMessageId = await adapter.sendInteractive(context, dto.interactiveContent);
+            }
+
+            const message = WhatsAppMessage.create({
+                tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
+                direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
+                messageType: 'INTERACTIVE', interactiveContent: dto.interactiveContent, status: 'SENT',
+                statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
+                isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
+            });
+
+            const saved = await messageRepo.save(message);
+            if (dto.linkTo) await conversationService.linkToEntity(context.id, dto.tenantId, dto.linkTo.type, dto.linkTo.entityId);
+            await timelineService.recordWhatsAppMessage(saved, context, 'OUTBOUND');
+
+            // ── Real-time: push outbound message to all connected agents ──
+            emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
+                id: saved.id,
+                conversationId: context.id,
+                direction: 'OUTBOUND',
+                type: 'INTERACTIVE',
+                content: dto.interactiveContent,
+                recipientPhone: dto.recipientPhone,
+                timestamp: new Date().toISOString(),
+                status: 'SENT',
+            });
+
+            emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
+                conversationId: context.id,
+                lastMessagePreview: dto.interactiveContent.type === 'CATALOG_MESSAGE' ? 'Sent a catalog' : 'Sent a product',
+                lastMessageAt: new Date().toISOString(),
+            });
+
+            return { success: true, messageId: saved.id, providerMessageId };
+        } catch (error: any) {
+            console.error('[MessageService] sendInteractive failed:', error.message);
+            return { success: false, error: error.message };
         }
-
-        const context = await conversationService.getOrCreateContext(dto.tenantId, dto.channel ?? 'WHATSAPP', dto.recipientPhone, 'SALES_AGENT');
-        const adapter = channelFactory.getAdapter(context.channel, dto.tenantId);
-
-        let providerMessageId: string;
-        if (!dto.interactiveContent) {
-            throw new Error('sendInteractive: missing interactiveContent and bodyText');
-        }
-        if (dto.interactiveContent.type === 'CATALOG_MESSAGE') {
-            providerMessageId = await adapter.sendInteractiveCatalogMessage(
-                context,
-                dto.interactiveContent.body || 'Check out our products!',
-                dto.interactiveContent.footer,
-                dto.interactiveContent.action?.thumbnail_product_retailer_id
-            );
-        } else if (dto.interactiveContent.type === 'PRODUCT') {
-            providerMessageId = await adapter.sendInteractiveProductMessage(
-                context,
-                dto.interactiveContent.action?.catalog_id || '',
-                dto.interactiveContent.action?.product_retailer_id || '',
-                dto.interactiveContent.body || 'Product Details'
-            );
-        } else if (dto.interactiveContent.type === 'PRODUCT_LIST') {
-            providerMessageId = await adapter.sendInteractiveMultiProductMessage(
-                context,
-                dto.interactiveContent.action?.catalog_id || '',
-                dto.interactiveContent.header || 'Products',
-                dto.interactiveContent.body || 'Browse our products',
-                dto.interactiveContent.action?.sections || [],
-                dto.interactiveContent.footer
-            );
-        } else {
-            // fallback generic interactive send
-            providerMessageId = await adapter.sendInteractive(context, dto.interactiveContent);
-        }
-
-        const message = WhatsAppMessage.create({
-            tenantId: dto.tenantId, conversationId: context.id, providerMessageId, providerTimestamp: new Date(),
-            direction: 'OUTBOUND', senderPhone: dto.recipientPhone, recipientPhone: dto.recipientPhone,
-            messageType: 'INTERACTIVE', interactiveContent: dto.interactiveContent, status: 'SENT',
-            statusTimestamps: { sent: new Date() }, handledByUserId: sanitizeUserId(dto.senderUserId),
-            isProcessed: true, requiresResponse: false, idempotencyKey: `${providerMessageId}-${dto.tenantId}`,
-        });
-
-        const saved = await messageRepo.save(message);
-        if (dto.linkTo) await conversationService.linkToEntity(context.id, dto.tenantId, dto.linkTo.type, dto.linkTo.entityId);
-        await timelineService.recordWhatsAppMessage(saved, context, 'OUTBOUND');
-
-        // ── Real-time: push outbound message to all connected agents ──
-        emitEvent(dto.tenantId, context.id, 'whatsapp:message', {
-            id: saved.id,
-            conversationId: context.id,
-            direction: 'OUTBOUND',
-            type: 'INTERACTIVE',
-            content: dto.interactiveContent,
-            recipientPhone: dto.recipientPhone,
-            timestamp: new Date().toISOString(),
-            status: 'SENT',
-        });
-
-        emitEvent(dto.tenantId, context.id, 'whatsapp:conversation_updated', {
-            conversationId: context.id,
-            lastMessagePreview: dto.interactiveContent.type === 'CATALOG_MESSAGE' ? 'Sent a catalog' : 'Sent a product',
-            lastMessageAt: new Date().toISOString(),
-        });
-
-        return { success: true, messageId: saved.id, providerMessageId };
     }
 
     async function generatePaymentLink(conversationId: string, messageId: string, tenantId: string, userId: string) {
