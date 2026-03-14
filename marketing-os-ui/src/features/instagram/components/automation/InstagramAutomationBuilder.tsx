@@ -29,10 +29,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { message as antMessage, Popconfirm, Spin } from 'antd';
-import { CATALOG_PRODUCTS, COMMENT_EXAMPLES, INSTAGRAM_AUTOMATION_NAV, SUGGESTED_KEYWORDS } from './mockData';
-import InstagramInboxWorkspace from '../inbox/InstagramInboxWorkspace';
 import { useInstagramAutomationStore } from './useInstagramAutomationStore';
 import { instagramApi } from '../../api/instagramApi';
+import { storeApi } from '../../../api/modules';
 import type {
   AutomationBuilderFormValues,
   CatalogProduct,
@@ -143,12 +142,12 @@ const toSchema = (values: AutomationBuilderFormValues): InstagramAutomationSchem
   status: values.status,
 });
 
-const blockFromType = (type: MessageBlockType): MessageBlock => {
+const blockFromType = (type: MessageBlockType, availableProducts: CatalogProduct[] = CATALOG_PRODUCTS): MessageBlock => {
   if (type === 'text') return { id: createId('text'), type, text: 'Type your message...' };
   if (type === 'button') return { id: createId('btn'), type, label: 'Button label', url: 'https://example.com' };
-  if (type === 'product_card') return { id: createId('pc'), type, productId: CATALOG_PRODUCTS[0]?.id, ctaLabel: 'Buy now' };
+  if (type === 'product_card') return { id: createId('pc'), type, productId: availableProducts[0]?.id, ctaLabel: 'Buy now' };
   if (type === 'product_catalog') return { id: createId('pg'), type, text: 'Featured products' };
-  if (type === 'image') return { id: createId('img'), type, imageUrl: CATALOG_PRODUCTS[0]?.image };
+  if (type === 'image') return { id: createId('img'), type, imageUrl: availableProducts[0]?.image || CATALOG_PRODUCTS[0]?.image };
   return { id: createId('cta'), type, ctaLabel: 'Get Offer', url: 'https://example.com/offer' };
 };
 
@@ -158,9 +157,10 @@ const InstagramAutomationBuilder: React.FC = () => {
   const [catalogIds, setCatalogIds] = useState<string[]>([]);
   const [connectedAccount, setConnectedAccount] = useState<{ id: string; username: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [savedAutomations, setSavedAutomations] = useState<any[]>([]);
   const [loadingAutomations, setLoadingAutomations] = useState(false);
   const [expandedAutomationId, setExpandedAutomationId] = useState<string | null>(null);
+  const [availableProducts, setAvailableProducts] = useState<CatalogProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   const activePreviewTab = useInstagramAutomationStore((state) => state.activePreviewTab);
   const selectedNav = useInstagramAutomationStore((state) => state.selectedNav);
@@ -203,6 +203,33 @@ const InstagramAutomationBuilder: React.FC = () => {
       .catch((err) => {
         console.error('Failed to fetch Instagram connection:', err);
       });
+  }, []);
+
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoadingProducts(true);
+      try {
+        const res = await storeApi.getProducts();
+        // Backend might return products in a different format, we ensure it matches CatalogProduct
+        const products = (res.data || res || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.imageUrl || p.image || CATALOG_PRODUCTS[0].image,
+          ctaLabel: 'Buy Now',
+          description: p.description || '',
+          url: p.url || `https://example.com/products/${p.id}`,
+        }));
+        setAvailableProducts(products);
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        setAvailableProducts(CATALOG_PRODUCTS); // Fallback to mock if API fails
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchProducts();
   }, []);
 
   // Fetch saved automations when viewing automations list
@@ -340,7 +367,7 @@ const InstagramAutomationBuilder: React.FC = () => {
   const applyCatalog = () => {
     setValue(
       'actions.0.products',
-      CATALOG_PRODUCTS.filter((item) => catalogIds.includes(item.id)),
+      availableProducts.filter((item) => catalogIds.includes(item.id)),
       { shouldDirty: true },
     );
     setCatalogOpen(false);
@@ -531,7 +558,7 @@ const InstagramAutomationBuilder: React.FC = () => {
 
         {/* Phone Preview (Builder View) */}
         <main className={`order-3 border-t border-white/10 bg-[#090e1a] px-4 py-5 xl:order-2 xl:border-t-0 xl:px-6 ${isInboxView || isAutomationsListView ? 'hidden' : ''}`}>
-          <PhonePreview activePreviewTab={activePreviewTab} setActivePreviewTab={setActivePreviewTab} keywords={keywords.map((item) => item.value)} blocks={blocks} products={products} optional={optional} message={message} simulationStep={simulationStep} />
+          <PhonePreview activePreviewTab={activePreviewTab} setActivePreviewTab={setActivePreviewTab} keywords={keywords.map((item) => item.value)} blocks={blocks} products={products} availableProducts={availableProducts} optional={optional} message={message} simulationStep={simulationStep} />
         </main>
         <aside className={`order-2 border-t border-white/10 bg-[#060914] px-4 py-5 xl:order-3 xl:border-l xl:border-t-0 xl:border-white/10 ${isInboxView || isAutomationsListView ? 'hidden' : ''}`}>
           <div className="mb-4 flex items-center gap-2">
@@ -675,7 +702,7 @@ const InstagramAutomationBuilder: React.FC = () => {
                     {(Object.keys(BLOCK_META) as MessageBlockType[]).map((type) => {
                       const Icon = BLOCK_META[type].icon;
                       return (
-                        <button key={type} onClick={() => appendBlock(blockFromType(type))} className="inline-flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-xs hover:border-sky-300/40">
+                        <button key={type} onClick={() => appendBlock(blockFromType(type, availableProducts))} className="inline-flex items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-2 text-xs hover:border-sky-300/40">
                           <Icon className="h-3.5 w-3.5" />{BLOCK_META[type].label}
                         </button>
                       );
@@ -696,7 +723,7 @@ const InstagramAutomationBuilder: React.FC = () => {
                               <button onClick={() => removeBlock(index)} className="rounded border border-rose-300/25 p-1 text-rose-200"><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
                           </div>
-                          <BlockEditor block={block} index={index} register={register} products={products.length ? products : CATALOG_PRODUCTS} openCatalog={openCatalog} />
+                          <BlockEditor block={block} index={index} register={register} products={availableProducts.length ? availableProducts : CATALOG_PRODUCTS} openCatalog={openCatalog} />
                         </div>
                       );
                     })}
@@ -729,16 +756,22 @@ const InstagramAutomationBuilder: React.FC = () => {
               <button onClick={() => setCatalogOpen(false)} className="rounded-lg border border-white/10 p-2"><X className="h-4 w-4" /></button>
             </div>
             <div className="grid max-h-[420px] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
-              {CATALOG_PRODUCTS.map((item) => {
-                const selected = catalogIds.includes(item.id);
-                return (
-                  <button key={item.id} onClick={() => setCatalogIds((previous) => (previous.includes(item.id) ? previous.filter((id) => id !== item.id) : [...previous, item.id]))} className={`rounded-xl border p-2 text-left ${selected ? 'border-lime-300/50 bg-lime-300/10' : 'border-white/10 bg-white/[0.03]'}`}>
-                    <img src={item.image} alt={item.name} className="h-28 w-full rounded-lg object-cover" />
-                    <div className="mt-2 flex items-start justify-between gap-2"><div><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-slate-400">{item.description}</p></div><span className="text-sm font-semibold text-lime-300">INR {item.price}</span></div>
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-black/30 px-2 py-1 text-[11px]">{selected ? <Check className="h-3.5 w-3.5 text-lime-300" /> : null}{selected ? 'Selected' : item.ctaLabel}</div>
-                  </button>
-                );
-              })}
+              {loadingProducts ? (
+                <div className="col-span-full py-20 text-center"><Spin /></div>
+              ) : availableProducts.length === 0 ? (
+                <div className="col-span-full py-20 text-center text-slate-500">No products found in catalog</div>
+              ) : (
+                availableProducts.map((item) => {
+                  const selected = catalogIds.includes(item.id);
+                  return (
+                    <button key={item.id} onClick={() => setCatalogIds((previous) => (previous.includes(item.id) ? previous.filter((id) => id !== item.id) : [...previous, item.id]))} className={`rounded-xl border p-2 text-left ${selected ? 'border-lime-300/50 bg-lime-300/10' : 'border-white/10 bg-white/[0.03]'}`}>
+                      <img src={item.image} alt={item.name} className="h-28 w-full rounded-lg object-cover" />
+                      <div className="mt-2 flex items-start justify-between gap-2"><div><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-slate-400">{item.description}</p></div><span className="text-sm font-semibold text-lime-300">INR {item.price}</span></div>
+                      <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-black/30 px-2 py-1 text-[11px]">{selected ? <Check className="h-3.5 w-3.5 text-lime-300" /> : null}{selected ? 'Selected' : item.ctaLabel}</div>
+                    </button>
+                  );
+                })
+              )}
             </div>
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-sm text-slate-300">{catalogIds.length} selected</p>
@@ -791,12 +824,13 @@ const PhonePreview: React.FC<{
   keywords: string[];
   blocks: MessageBlock[];
   products: CatalogProduct[];
+  availableProducts: CatalogProduct[];
   optional: AutomationBuilderFormValues['optionalActions'];
   message: string;
   simulationStep: number;
-}> = ({ activePreviewTab, setActivePreviewTab, keywords, blocks, products, optional, message, simulationStep }) => {
+}> = ({ activePreviewTab, setActivePreviewTab, keywords, blocks, products, availableProducts, optional, message, simulationStep }) => {
   const keyword = keywords[0] || 'link';
-  const resolveProduct = (id?: string): CatalogProduct => products.find((item) => item.id === id) || CATALOG_PRODUCTS.find((item) => item.id === id) || products[0] || CATALOG_PRODUCTS[0];
+  const resolveProduct = (id?: string): CatalogProduct => products.find((item) => item.id === id) || availableProducts.find((item) => item.id === id) || CATALOG_PRODUCTS.find((item) => item.id === id) || products[0] || availableProducts[0] || CATALOG_PRODUCTS[0];
   
   return (
     <div className="mx-auto flex max-w-[430px] flex-col items-center">
