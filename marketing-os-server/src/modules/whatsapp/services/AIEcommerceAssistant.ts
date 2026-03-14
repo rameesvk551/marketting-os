@@ -108,7 +108,7 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
                 const sections = Array.from(categoryMap.values()).map(cat => ({
                     title: cat.name,
                     product_items: cat.items.map((p: any) => ({
-                        product_retailer_id: p.sku ? String(p.sku) : p._id.toString()
+                        product_retailer_id: p._id.toString()
                     }))
                 }));
 
