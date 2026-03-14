@@ -180,6 +180,14 @@ const WhatsAppChats: React.FC = () => {
 
                                         if (msgType === 'TEXT' || msgType === 'text') {
                                             body = msg.textContent?.body || msg.content?.body || msg.textBody || msg.body || '';
+                                        } else if (msgType === 'INTERACTIVE' && !isOut && (msg.selectedButtonId || msg.selectedListItemId)) {
+                                            // Handle inbound interactive replies (button/list clicks)
+                                            body = (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <CheckOutlined style={{ fontSize: 12, color: '#00a884' }} />
+                                                    <span>{msg.textContent?.body || msg.textBody || 'Selection made'}</span>
+                                                </div>
+                                            );
                                         } else if (msgType === 'TEMPLATE' || msgType === 'template') {
                                             body = `📋 Template: ${msg.templateContent?.templateName || msg.metadata?.templateName || 'Unknown'}`;
                                         } else if (msgType === 'ORDER') {
@@ -228,8 +236,45 @@ const WhatsAppChats: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 );
+                                            } else if (interactive?.type === 'BUTTON') {
+                                                body = (
+                                                    <div style={{ background: isOut ? '#d9fdd3' : '#fff', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', minWidth: 200, display: 'flex', flexDirection: 'column' }}>
+                                                        {interactive.header && <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#111b21' }}>{interactive.header}</div>}
+                                                        <div style={{ fontSize: 14, marginBottom: 8, color: '#111b21', whiteSpace: 'pre-wrap' }}>{interactive.body?.text || interactive.body || ''}</div>
+                                                        {interactive.footer && <div style={{ fontSize: 11, color: '#8696a0', marginBottom: 8 }}>{interactive.footer}</div>}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 4 }}>
+                                                            {interactive.buttons?.map((btn: any) => (
+                                                                <div key={btn.id} style={{ padding: '8px 0', textAlign: 'center', color: '#00a884', fontWeight: 600, fontSize: 13, cursor: 'default' }}>
+                                                                    {btn.title || btn.reply?.title}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else if (interactive?.type === 'LIST') {
+                                                body = (
+                                                    <div style={{ background: isOut ? '#d9fdd3' : '#fff', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', minWidth: 200, display: 'flex', flexDirection: 'column' }}>
+                                                        {interactive.header && <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#111b21' }}>{interactive.header}</div>}
+                                                        <div style={{ fontSize: 14, marginBottom: 8, color: '#111b21', whiteSpace: 'pre-wrap' }}>{interactive.body?.text || interactive.body || ''}</div>
+                                                        {interactive.footer && <div style={{ fontSize: 11, color: '#8696a0', marginBottom: 8 }}>{interactive.footer}</div>}
+                                                        <div style={{ fontWeight: 600, color: '#00a884', textAlign: 'center', padding: '10px 0 2px', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 'auto' }}>
+                                                            View List
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else if (interactive?.type === 'PRODUCT_LIST') {
+                                                body = (
+                                                    <div style={{ background: isOut ? '#d9fdd3' : '#fff', padding: 8, borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)', minWidth: 200, display: 'flex', flexDirection: 'column' }}>
+                                                        {interactive.header && <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: '#111b21' }}>{interactive.header}</div>}
+                                                        <div style={{ fontSize: 14, marginBottom: 8, color: '#111b21', whiteSpace: 'pre-wrap' }}>{interactive.body?.text || interactive.body || ''}</div>
+                                                        {interactive.footer && <div style={{ fontSize: 11, color: '#8696a0', marginBottom: 8 }}>{interactive.footer}</div>}
+                                                        <div style={{ fontWeight: 600, color: '#00a884', textAlign: 'center', padding: '10px 0 2px', borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: 'auto' }}>
+                                                            View Items
+                                                        </div>
+                                                    </div>
+                                                );
                                             } else {
-                                                body = '👆 Interactive Message (Interactive UI not fully supported on web yet)';
+                                                body = (interactive.body?.text || interactive.body || '👆 Interactive Message');
                                             }
                                         } else {
                                             body = `📎 ${msgType}`;

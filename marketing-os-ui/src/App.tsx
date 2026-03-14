@@ -1,13 +1,7 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider } from 'antd';
-import { AppLayout } from './components/layout/AppLayout';
-import { LeadsPage as CRMDashboard } from './features/crm';
-import { WhatsAppDashboard } from './features/whatsapp';
-import { InstagramAutomationPage, InstagramDashboard } from './features/instagram';
-import { CatalogDashboard } from './features/catalog';
-import { SettingsLayout } from './features/settings';
-import { ConfigureBusinessLayout } from './features/configure-business';
 
 // Auth Imports
 import { AuthProvider } from './context/AuthContext';
@@ -17,20 +11,48 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import MetaAuthCallback from './pages/auth/MetaAuthCallback';
 import { PrivateRoute } from './components/auth/PrivateRoute';
-import { AdminShell } from './admin';
 import { AdminRoleGuard } from './admin/components/auth/AdminRoleGuard';
 import { AdminPrivateRoute } from './admin/components/auth/AdminPrivateRoute';
 import AdminLoginPage from './admin/modules/auth/AdminLoginPage';
-import OverviewPage from './admin/modules/overview/OverviewPage';
-import TenantsPage from './admin/modules/tenants/TenantsPage';
-import UsersPage from './admin/modules/users/UsersPage';
-import BillingPage from './admin/modules/billing/BillingPage';
-import IntegrationsPage from './admin/modules/integrations/IntegrationsPage';
-import AutomationLogsPage from './admin/modules/system/AutomationLogsPage';
-import AuditLogsPage from './admin/modules/system/AuditLogsPage';
-import SystemHealthPage from './admin/modules/system/SystemHealthPage';
-import FeatureManagementPage from './admin/modules/feature-management/FeatureManagementPage';
-import SettingsPage from './admin/modules/settings/SettingsPage';
+import { RouteLoader } from './components/layout/RouteLoader';
+
+const AppLayout = lazy(() =>
+  import('./components/layout/AppLayout').then((module) => ({ default: module.AppLayout }))
+);
+const CRMDashboard = lazy(() =>
+  import('./features/crm').then((module) => ({ default: module.LeadsPage }))
+);
+const WhatsAppDashboard = lazy(() =>
+  import('./features/whatsapp').then((module) => ({ default: module.WhatsAppDashboard }))
+);
+const InstagramDashboard = lazy(() =>
+  import('./features/instagram').then((module) => ({ default: module.InstagramDashboard }))
+);
+const InstagramAutomationPage = lazy(() =>
+  import('./features/instagram').then((module) => ({ default: module.InstagramAutomationPage }))
+);
+const CatalogDashboard = lazy(() =>
+  import('./features/catalog').then((module) => ({ default: module.CatalogDashboard }))
+);
+const SettingsLayout = lazy(() =>
+  import('./features/settings').then((module) => ({ default: module.SettingsLayout }))
+);
+const ConfigureBusinessLayout = lazy(() =>
+  import('./features/configure-business').then((module) => ({ default: module.ConfigureBusinessLayout }))
+);
+const AdminShell = lazy(() =>
+  import('./admin').then((module) => ({ default: module.AdminShell }))
+);
+const OverviewPage = lazy(() => import('./admin/modules/overview/OverviewPage'));
+const TenantsPage = lazy(() => import('./admin/modules/tenants/TenantsPage'));
+const UsersPage = lazy(() => import('./admin/modules/users/UsersPage'));
+const BillingPage = lazy(() => import('./admin/modules/billing/BillingPage'));
+const IntegrationsPage = lazy(() => import('./admin/modules/integrations/IntegrationsPage'));
+const AutomationLogsPage = lazy(() => import('./admin/modules/system/AutomationLogsPage'));
+const AuditLogsPage = lazy(() => import('./admin/modules/system/AuditLogsPage'));
+const SystemHealthPage = lazy(() => import('./admin/modules/system/SystemHealthPage'));
+const FeatureManagementPage = lazy(() => import('./admin/modules/feature-management/FeatureManagementPage'));
+const SettingsPage = lazy(() => import('./admin/modules/settings/SettingsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,7 +76,7 @@ const antTheme = {
     colorBorder: '#E2E8F0',
     colorText: '#0F172A',
     colorTextSecondary: '#64748B',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     borderRadius: 8,
     fontSize: 14,
     controlHeight: 40,
@@ -103,72 +125,60 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/auth/meta/callback" element={<MetaAuthCallback />} />
-              <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Suspense fallback={<RouteLoader />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/auth/meta/callback" element={<MetaAuthCallback />} />
+                <Route path="/admin/login" element={<AdminLoginPage />} />
 
-              {/* Super Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminPrivateRoute>
-                    <AdminRoleGuard>
-                      <AdminShell />
-                    </AdminRoleGuard>
-                  </AdminPrivateRoute>
-                }
-              >
-                <Route index element={<Navigate to="overview" replace />} />
-                <Route path="overview" element={<OverviewPage />} />
-                <Route path="tenants" element={<TenantsPage />} />
-                <Route path="users" element={<UsersPage />} />
-                <Route path="billing" element={<BillingPage />} />
-                <Route path="integrations" element={<IntegrationsPage />} />
-                <Route path="automation-logs" element={<AutomationLogsPage />} />
-                <Route path="audit-logs" element={<AuditLogsPage />} />
-                <Route path="system-health" element={<SystemHealthPage />} />
-                <Route path="feature-management" element={<FeatureManagementPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-              </Route>
+                {/* Super Admin Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminPrivateRoute>
+                      <AdminRoleGuard>
+                        <AdminShell />
+                      </AdminRoleGuard>
+                    </AdminPrivateRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="overview" replace />} />
+                  <Route path="overview" element={<OverviewPage />} />
+                  <Route path="tenants" element={<TenantsPage />} />
+                  <Route path="users" element={<UsersPage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
+                  <Route path="automation-logs" element={<AutomationLogsPage />} />
+                  <Route path="audit-logs" element={<AuditLogsPage />} />
+                  <Route path="system-health" element={<SystemHealthPage />} />
+                  <Route path="feature-management" element={<FeatureManagementPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
 
-              {/* Protected Routes */}
-              <Route
-                path="/instagram"
-                element={
-                  <PrivateRoute>
-                    <InstagramDashboard />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/instagram/automation"
-                element={
-                  <PrivateRoute>
-                    <InstagramAutomationPage />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <AppLayout />
-                  </PrivateRoute>
-                }
-              >
-                <Route index element={<Navigate to="crm" replace />} />
-                <Route path="crm" element={<CRMDashboard />} />
-                <Route path="whatsapp" element={<WhatsAppDashboard />} />
-                <Route path="catalog" element={<CatalogDashboard />} />
-                <Route path="settings" element={<SettingsLayout />} />
-                <Route path="configure-business/*" element={<ConfigureBusinessLayout />} />
-              </Route>
-            </Routes>
+                {/* Protected Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <PrivateRoute>
+                      <AppLayout />
+                    </PrivateRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="crm" replace />} />
+                  <Route path="crm" element={<CRMDashboard />} />
+                  <Route path="whatsapp" element={<WhatsAppDashboard />} />
+                  <Route path="instagram" element={<InstagramDashboard />} />
+                  <Route path="instagram/automation" element={<InstagramAutomationPage />} />
+                  <Route path="catalog" element={<CatalogDashboard />} />
+                  <Route path="settings" element={<SettingsLayout />} />
+                  <Route path="configure-business/*" element={<ConfigureBusinessLayout />} />
+                </Route>
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>

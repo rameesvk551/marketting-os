@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, Badge, Tooltip, Drawer } from 'antd';
+import { Layout, Menu, Typography, Avatar, Badge, Tooltip, Drawer, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
 import {
     RocketOutlined,
     SettingOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     BellOutlined,
-    SearchOutlined,
     TeamOutlined,
     WhatsAppOutlined,
     InstagramOutlined,
@@ -16,11 +17,10 @@ import {
     ShopOutlined,
     AppstoreOutlined,
     ShoppingCartOutlined,
+    UserOutlined,
+    LogoutOutlined,
 } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
 import { useAuth } from '../../context/AuthContext';
-import { Dropdown } from 'antd';
-import { LogoutOutlined } from '@ant-design/icons';
 import { useResponsive } from '../../hooks/useResponsive';
 
 const { Sider, Content, Header } = Layout;
@@ -28,11 +28,19 @@ const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
+const configureBusinessChildren = [
+    { key: '/configure-business/profile', label: 'Business Profile' },
+    { key: '/configure-business/products', icon: <AppstoreOutlined />, label: 'Products' },
+    { key: '/configure-business/categories', icon: <AppstoreOutlined />, label: 'Categories' },
+    { key: '/configure-business/orders', icon: <ShoppingCartOutlined />, label: 'Orders' },
+    { key: '/configure-business/payment-settings', label: 'Payment Settings' },
+];
+
 const navItems: MenuItem[] = [
     {
         key: '/crm',
         icon: <TeamOutlined />,
-        label: 'Leads',
+        label: 'CRM',
     },
     {
         key: '/whatsapp',
@@ -44,19 +52,6 @@ const navItems: MenuItem[] = [
         icon: <InstagramOutlined />,
         label: 'Instagram',
     },
-    // {
-    //     key: '/catalog',
-    //     icon: <ShoppingCartOutlined />,
-    //     label: 'Catalog',
-    // },
-    {
-        type: 'divider',
-    },
-    {
-        key: '/settings',
-        icon: <SettingOutlined />,
-        label: 'Settings',
-    },
     {
         type: 'divider',
     },
@@ -64,57 +59,194 @@ const navItems: MenuItem[] = [
         key: '/configure-business',
         icon: <ShopOutlined />,
         label: 'Configure Business',
-        children: [
-            { key: '/configure-business/profile', label: 'Business Profile' },
-            { key: '/configure-business/products', icon: <AppstoreOutlined />, label: 'Products' },
-            { key: '/configure-business/categories', icon: <AppstoreOutlined />, label: 'Categories' },
-            { key: '/configure-business/orders', icon: <ShoppingCartOutlined />, label: 'Orders' },
-            { key: '/configure-business/payment-settings', label: 'Payment Settings' },
-        ],
+        children: configureBusinessChildren,
+    },
+    {
+        key: '/settings',
+        icon: <SettingOutlined />,
+        label: 'Settings',
     },
 ];
+
+const mobilePrimaryNav = [
+    {
+        key: '/crm',
+        label: 'CRM',
+        icon: <TeamOutlined />,
+        matches: (path: string) => path === '/' || path.startsWith('/crm'),
+    },
+    {
+        key: '/whatsapp',
+        label: 'WA',
+        icon: <WhatsAppOutlined />,
+        matches: (path: string) => path.startsWith('/whatsapp'),
+    },
+    {
+        key: '/instagram',
+        label: 'IG',
+        icon: <InstagramOutlined />,
+        matches: (path: string) => path.startsWith('/instagram'),
+    },
+    {
+        key: '/configure-business/profile',
+        label: 'Store',
+        icon: <ShopOutlined />,
+        matches: (path: string) => path.startsWith('/configure-business'),
+    },
+    {
+        key: '/settings',
+        label: 'Settings',
+        icon: <SettingOutlined />,
+        matches: (path: string) => path.startsWith('/settings'),
+    },
+];
+
+const iconButtonStyle: CSSProperties = {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    border: '1px solid rgba(226,232,240,0.9)',
+    background: 'rgba(255,255,255,0.92)',
+    color: '#0F172A',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 10px 24px rgba(15,23,42,0.06)',
+};
+
+function getPageMeta(pathname: string) {
+    if (pathname.startsWith('/whatsapp')) {
+        return {
+            section: 'Messaging',
+            title: 'WhatsApp',
+            description: 'Run conversations, broadcasts, and automation without losing mobile speed.',
+        };
+    }
+
+    if (pathname.startsWith('/instagram')) {
+        return {
+            section: 'Social',
+            title: 'Instagram',
+            description: 'Manage content, inbox workflows, and automations from one compact workspace.',
+        };
+    }
+
+    if (pathname.startsWith('/settings')) {
+        return {
+            section: 'Workspace',
+            title: 'Settings',
+            description: 'Keep account, billing, integrations, and permissions easy to reach on mobile.',
+        };
+    }
+
+    if (pathname.startsWith('/configure-business')) {
+        const activeChild = configureBusinessChildren.find(
+            (item) => pathname === item.key || pathname.startsWith(`${item.key}/`)
+        );
+
+        return {
+            section: 'Store Ops',
+            title: activeChild?.label ?? 'Configure Business',
+            description: 'Update catalog, orders, and payment details in a touch-first workflow.',
+        };
+    }
+
+    if (pathname.startsWith('/catalog')) {
+        return {
+            section: 'Commerce',
+            title: 'Catalog',
+            description: 'Connect products and sync inventory without leaving the main app shell.',
+        };
+    }
+
+    return {
+        section: 'Sales',
+        title: 'CRM',
+        description: 'Track leads, deals, and follow-ups with a mobile-first command center.',
+    };
+}
+
+function getSelectedMenuKey(pathname: string) {
+    if (pathname.startsWith('/configure-business')) {
+        const child = configureBusinessChildren.find(
+            (item) => pathname === item.key || pathname.startsWith(`${item.key}/`)
+        );
+        return child?.key ?? '/configure-business';
+    }
+
+    if (pathname.startsWith('/settings')) {
+        return '/settings';
+    }
+
+    if (pathname.startsWith('/instagram')) {
+        return '/instagram';
+    }
+
+    if (pathname.startsWith('/whatsapp')) {
+        return '/whatsapp';
+    }
+
+    return '/crm';
+}
 
 export function AppLayout() {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+    const [openKeys, setOpenKeys] = useState<string[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { isMobile, isTablet } = useResponsive();
 
-    // Auto-collapse sidebar on tablet
     useEffect(() => {
         if (isTablet) setCollapsed(true);
         if (!isMobile && !isTablet) setCollapsed(false);
     }, [isMobile, isTablet]);
 
-    // Close drawer on route change
     useEffect(() => {
         setMobileDrawerOpen(false);
     }, [location.pathname]);
 
-    // Match the active menu key based on current path
-    const getSelectedKey = () => {
-        const path = location.pathname;
-        if (path === '/') return '/';
-        const exact = navItems.find((item: any) => item?.key === path);
-        if (exact) return path;
-        const prefix = navItems
-            .filter((item: any) => item?.key && item.key !== '/')
-            .sort((a: any, b: any) => (b?.key?.length || 0) - (a?.key?.length || 0))
-            .find((item: any) => path.startsWith(item.key));
-        return (prefix as any)?.key || '/';
-    };
+    useEffect(() => {
+        if (location.pathname.startsWith('/configure-business')) {
+            setOpenKeys(['/configure-business']);
+        }
+    }, [location.pathname]);
+
+    const pageMeta = useMemo(() => getPageMeta(location.pathname), [location.pathname]);
+    const selectedKey = useMemo(() => getSelectedMenuKey(location.pathname), [location.pathname]);
+    const userInitial = user?.name?.charAt(0).toUpperCase() || 'U';
+    const sidebarWidth = collapsed ? 84 : 288;
 
     const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
         navigate(key);
-        if (isMobile) setMobileDrawerOpen(false);
+        setMobileDrawerOpen(false);
     };
 
-    // Sidebar content (reused in both Sider and Drawer)
+    const userMenuItems = [
+        {
+            key: 'profile',
+            label: (
+                <div>
+                    <div style={{ fontWeight: 600 }}>{user?.name || 'User'}</div>
+                    <div style={{ fontSize: 11, color: '#64748B' }}>{user?.email}</div>
+                    <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{user?.tenantName}</div>
+                </div>
+            ),
+        },
+        { type: 'divider' as const },
+        {
+            key: 'logout',
+            icon: <LogoutOutlined />,
+            label: 'Logout',
+            onClick: logout,
+            danger: true,
+        },
+    ];
+
     const sidebarContent = (
-        <>
-            {/* Logo */}
+        <div style={{ display: 'flex', minHeight: '100%', flexDirection: 'column' }}>
             <div
                 style={{
                     height: 'var(--header-height, 64px)',
@@ -122,125 +254,263 @@ export function AppLayout() {
                     alignItems: 'center',
                     padding: collapsed && !isMobile ? '0 20px' : '0 24px',
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    gap: 12,
+                    gap: 14,
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.2s ease',
                 }}
                 onClick={() => {
-                    navigate('/');
-                    if (isMobile) setMobileDrawerOpen(false);
+                    navigate('/crm');
+                    setMobileDrawerOpen(false);
                 }}
             >
                 <div
                     style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
-                        background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+                        width: 40,
+                        height: 40,
+                        borderRadius: 14,
+                        background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
+                        boxShadow: '0 14px 28px rgba(79,70,229,0.34)',
                     }}
                 >
-                    <RocketOutlined style={{ color: '#fff', fontSize: 16 }} />
+                    <RocketOutlined style={{ color: '#fff', fontSize: 18 }} />
                 </div>
                 {(!collapsed || isMobile) && (
                     <div style={{ overflow: 'hidden', flex: 1 }}>
-                        <Text strong style={{ color: '#fff', fontSize: 16, whiteSpace: 'nowrap', display: 'block', lineHeight: 1.2 }}>
+                        <Text
+                            strong
+                            style={{
+                                color: '#fff',
+                                fontSize: 16,
+                                whiteSpace: 'nowrap',
+                                display: 'block',
+                                lineHeight: 1.1,
+                                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                            }}
+                        >
                             Marketing OS
                         </Text>
-                        <Text style={{ color: '#64748B', fontSize: 11, whiteSpace: 'nowrap', display: 'block' }}>
-                            Growth Platform
+                        <Text
+                            style={{
+                                color: '#94A3B8',
+                                fontSize: 11,
+                                whiteSpace: 'nowrap',
+                                display: 'block',
+                                marginTop: 2,
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                            }}
+                        >
+                            Mobile-first workspace
                         </Text>
                     </div>
                 )}
                 {isMobile && (
                     <CloseOutlined
                         style={{ color: '#94A3B8', fontSize: 18, marginLeft: 'auto', cursor: 'pointer' }}
-                        onClick={(e) => { e.stopPropagation(); setMobileDrawerOpen(false); }}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setMobileDrawerOpen(false);
+                        }}
                     />
                 )}
             </div>
 
-            {/* Menu */}
+            {!collapsed && !isMobile && (
+                <div style={{ padding: '18px 24px 0' }}>
+                    <Text style={{ color: '#64748B', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                        Workspace
+                    </Text>
+                </div>
+            )}
+
             <Menu
                 mode="inline"
-                selectedKeys={[getSelectedKey()]}
+                selectedKeys={[selectedKey]}
                 onClick={handleMenuClick}
+                openKeys={collapsed && !isMobile ? [] : openKeys}
+                onOpenChange={(keys) => setOpenKeys(keys as string[])}
                 items={navItems}
                 style={{
                     background: 'transparent',
                     border: 'none',
-                    padding: '12px 8px',
+                    padding: '12px 10px 0',
+                    flex: 1,
                 }}
                 theme="dark"
             />
 
-            {/* Collapse Toggle — desktop only */}
-            {!isMobile && (
+            <div style={{ marginTop: 'auto', padding: collapsed && !isMobile ? '0 12px 16px' : '0 16px 16px' }}>
                 <div
                     style={{
-                        position: 'absolute',
-                        bottom: 16,
-                        width: '100%',
-                        padding: '0 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: collapsed && !isMobile ? '12px 10px' : '14px 14px',
+                        borderRadius: 20,
+                        background: 'rgba(148,163,184,0.08)',
+                        border: '1px solid rgba(148,163,184,0.12)',
                     }}
                 >
-                    <div
-                        onClick={() => setCollapsed(!collapsed)}
+                    <Avatar
+                        size={collapsed && !isMobile ? 36 : 40}
                         style={{
+                            background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+                            color: '#fff',
+                            flexShrink: 0,
+                        }}
+                        icon={!user?.name ? <UserOutlined /> : undefined}
+                    >
+                        {user?.name ? userInitial : undefined}
+                    </Avatar>
+                    {(!collapsed || isMobile) && (
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <Text strong style={{ color: '#F8FAFC', display: 'block', lineHeight: 1.2 }}>
+                                {user?.name || 'User'}
+                            </Text>
+                            <Text
+                                style={{
+                                    color: '#94A3B8',
+                                    fontSize: 12,
+                                    display: 'block',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}
+                            >
+                                {user?.tenantName || user?.email || 'Workspace'}
+                            </Text>
+                        </div>
+                    )}
+                </div>
+
+                {!isMobile && (
+                    <button
+                        type="button"
+                        onClick={() => setCollapsed((value) => !value)}
+                        style={{
+                            marginTop: 12,
+                            width: '100%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: collapsed ? 'center' : 'flex-start',
                             gap: 10,
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            cursor: 'pointer',
+                            padding: '12px 14px',
+                            borderRadius: 16,
+                            border: '1px solid rgba(148,163,184,0.12)',
+                            background: 'transparent',
                             color: '#94A3B8',
-                            transition: 'all 0.2s',
+                            cursor: 'pointer',
                         }}
                     >
                         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                        {!collapsed && <span style={{ fontSize: 13 }}>Collapse</span>}
-                    </div>
-                </div>
-            )}
-        </>
+                        {!collapsed && <span style={{ fontSize: 13, fontWeight: 600 }}>Collapse navigation</span>}
+                    </button>
+                )}
+            </div>
+        </div>
     );
 
-    const sidebarWidth = collapsed ? 72 : 260;
+    const desktopActions = (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            {!isMobile && user?.tenantName && (
+                <div
+                    style={{
+                        padding: '8px 12px',
+                        borderRadius: 999,
+                        background: 'rgba(79,70,229,0.08)',
+                        color: '#4338CA',
+                        fontSize: 12,
+                        fontWeight: 700,
+                    }}
+                >
+                    {user.tenantName}
+                </div>
+            )}
+            {!isMobile && (
+                <Tooltip title="Notifications">
+                    <button type="button" style={iconButtonStyle} aria-label="Open notifications">
+                        <Badge count={3} size="small">
+                            <BellOutlined style={{ fontSize: 18, color: '#475569' }} />
+                        </Badge>
+                    </button>
+                </Tooltip>
+            )}
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+                <button
+                    type="button"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: isMobile ? 0 : '4px 6px 4px 4px',
+                        border: 0,
+                        background: 'transparent',
+                        cursor: 'pointer',
+                    }}
+                    aria-label="Open user menu"
+                >
+                    <Avatar
+                        style={{
+                            background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+                            color: '#fff',
+                            boxShadow: '0 12px 24px rgba(79,70,229,0.24)',
+                        }}
+                        size={isMobile ? 36 : 40}
+                        icon={!user?.name ? <UserOutlined /> : undefined}
+                    >
+                        {user?.name ? userInitial : undefined}
+                    </Avatar>
+                    {!isMobile && (
+                        <div
+                            style={{
+                                display: 'flex',
+                                minWidth: 0,
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                                lineHeight: 1.15,
+                            }}
+                        >
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{user?.name || 'User'}</span>
+                            <span style={{ fontSize: 11, color: '#64748B' }}>{user?.role || 'Admin'}</span>
+                        </div>
+                    )}
+                </button>
+            </Dropdown>
+        </div>
+    );
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
-            {/* Mobile Drawer Sidebar */}
+        <Layout style={{ minHeight: '100svh', background: '#F8FAFC' }}>
             {isMobile ? (
                 <Drawer
                     open={mobileDrawerOpen}
                     onClose={() => setMobileDrawerOpen(false)}
                     placement="left"
-                    width={280}
+                    width="min(320px, calc(100vw - 24px))"
                     className="mobile-sidebar-drawer"
                     styles={{ body: { padding: 0, background: '#0F172A' } }}
                 >
-                    <div style={{ background: '#0F172A', minHeight: '100vh', position: 'relative' }}>
+                    <div style={{ background: '#0F172A', minHeight: '100svh' }}>
                         {sidebarContent}
                     </div>
                 </Drawer>
             ) : (
-                /* Desktop/Tablet Sidebar */
                 <Sider
                     collapsible
                     collapsed={collapsed}
                     onCollapse={setCollapsed}
                     trigger={null}
-                    width={260}
-                    collapsedWidth={72}
+                    width={288}
+                    collapsedWidth={84}
                     style={{
                         background: '#0F172A',
                         borderRight: '1px solid rgba(255,255,255,0.06)',
-                        overflow: 'auto',
-                        height: '100vh',
+                        overflow: 'hidden',
+                        height: '100svh',
                         position: 'fixed',
                         left: 0,
                         top: 0,
@@ -252,156 +522,123 @@ export function AppLayout() {
                 </Sider>
             )}
 
-            {/* Main Content */}
             <Layout
                 style={{
                     marginLeft: isMobile ? 0 : sidebarWidth,
-                    transition: 'margin-left 0.2s',
-                    minHeight: '100vh',
-                    background: '#F8FAFC',
+                    transition: 'margin-left 0.2s ease',
+                    minHeight: '100svh',
+                    background:
+                        'radial-gradient(circle at top right, rgba(79,70,229,0.08), transparent 24%), linear-gradient(180deg, #ffffff 0%, #f8fafc 220px, #f4f7fb 100%)',
                 }}
             >
-                {/* Top Header Bar */}
                 <Header
                     style={{
-                        background: '#FFFFFF',
-                        padding: isMobile ? '0 16px' : '0 32px',
+                        background: 'rgba(255,255,255,0.78)',
+                        backdropFilter: 'blur(18px)',
+                        padding: isMobile ? '0 16px' : '0 28px',
                         height: 'var(--header-height, 64px)',
-                        lineHeight: 'var(--header-height, 64px)',
+                        lineHeight: 'normal',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        borderBottom: '1px solid #E2E8F0',
+                        borderBottom: '1px solid rgba(226,232,240,0.85)',
                         position: 'sticky',
                         top: 0,
-                        zIndex: 50,
-                        gap: 12,
+                        zIndex: 40,
+                        gap: 16,
                     }}
                 >
-                    {/* Left side: Hamburger (mobile) + Search */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                         {isMobile && (
-                            <MenuOutlined
+                            <button
+                                type="button"
                                 onClick={() => setMobileDrawerOpen(true)}
+                                style={iconButtonStyle}
+                                aria-label="Open navigation"
+                            >
+                                <MenuOutlined style={{ fontSize: 18 }} />
+                            </button>
+                        )}
+                        <div style={{ minWidth: 0 }}>
+                            <Text
                                 style={{
-                                    fontSize: 20,
+                                    display: 'block',
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    letterSpacing: '0.12em',
+                                    textTransform: 'uppercase',
+                                    color: '#64748B',
+                                }}
+                            >
+                                {pageMeta.section}
+                            </Text>
+                            <Text
+                                strong
+                                style={{
+                                    display: 'block',
+                                    fontSize: isMobile ? 18 : 22,
+                                    lineHeight: 1.1,
                                     color: '#0F172A',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                }}
-                            />
-                        )}
-
-                        {/* Search — full on desktop, icon-only on mobile */}
-                        {!isMobile ? (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    background: '#F1F5F9',
-                                    padding: '8px 16px',
-                                    borderRadius: 8,
-                                    width: isTablet ? 200 : 320,
-                                    color: '#94A3B8',
-                                    cursor: 'pointer',
-                                    transition: 'width 0.2s',
+                                    fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
                                 }}
                             >
-                                <SearchOutlined />
-                                <span style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    Search campaigns, analytics...
-                                </span>
-                                {!isTablet && (
-                                    <span style={{ marginLeft: 'auto', fontSize: 11, background: '#E2E8F0', padding: '2px 6px', borderRadius: 4, color: '#64748B' }}>⌘K</span>
-                                )}
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 8,
-                                    background: '#F1F5F9',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: '#94A3B8',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <SearchOutlined style={{ fontSize: 16 }} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right side */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 20, flexShrink: 0 }}>
-                        <Tooltip title="Notifications">
-                            <Badge count={3} size="small">
-                                <BellOutlined style={{ fontSize: 18, color: '#64748B', cursor: 'pointer' }} />
-                            </Badge>
-                        </Tooltip>
-
-                        <Dropdown
-                            menu={{
-                                items: [
-                                    {
-                                        key: 'profile',
-                                        label: (
-                                            <div>
-                                                <div style={{ fontWeight: 500 }}>{user?.name || 'User'}</div>
-                                                <div style={{ fontSize: 11, color: '#64748B' }}>{user?.email}</div>
-                                                <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{user?.tenantName}</div>
-                                            </div>
-                                        )
-                                    },
-                                    { type: 'divider' },
-                                    {
-                                        key: 'logout',
-                                        icon: <LogoutOutlined />,
-                                        label: 'Logout',
-                                        onClick: logout,
-                                        danger: true
-                                    }
-                                ]
-                            }}
-                            placement="bottomRight"
-                            arrow
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                <Avatar
+                                {pageMeta.title}
+                            </Text>
+                            {!isMobile && (
+                                <Text
                                     style={{
-                                        background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
-                                        cursor: 'pointer',
+                                        display: 'block',
+                                        marginTop: 4,
+                                        maxWidth: isTablet ? 420 : 560,
+                                        fontSize: 13,
+                                        color: '#64748B',
                                     }}
-                                    size={isMobile ? 32 : 36}
                                 >
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                                </Avatar>
-                                {!isMobile && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                                        <span style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || 'User'}</span>
-                                        <span style={{ fontSize: 11, color: '#64748B' }}>{user?.role || 'Admin'}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </Dropdown>
+                                    {pageMeta.description}
+                                </Text>
+                            )}
+                        </div>
                     </div>
+
+                    {desktopActions}
                 </Header>
 
-                {/* Page Content */}
                 <Content
                     style={{
-                        padding: 'var(--page-padding, 16px)',
-                        minHeight: 'calc(100vh - var(--header-height, 64px))',
+                        padding: isMobile
+                            ? '14px var(--page-padding, 16px) calc(var(--mobile-nav-height, 84px) + 22px)'
+                            : 'var(--page-padding, 16px)',
+                        minHeight: 'calc(100svh - var(--header-height, 64px))',
+                        overflowX: 'hidden',
                     }}
                 >
-                    <div className="animate-fade-in">
+                    <div className="animate-fade-in" style={{ margin: '0 auto', width: '100%', maxWidth: 1600 }}>
                         <Outlet />
                     </div>
                 </Content>
+
+                {isMobile && (
+                    <nav className="mobile-bottom-nav" aria-label="Primary navigation">
+                        <div className="mobile-bottom-nav__inner">
+                            {mobilePrimaryNav.map((item) => {
+                                const active = item.matches(location.pathname);
+
+                                return (
+                                    <button
+                                        key={item.key}
+                                        type="button"
+                                        className={`mobile-bottom-nav__button${active ? ' mobile-bottom-nav__button--active' : ''}`}
+                                        onClick={() => navigate(item.key)}
+                                        aria-current={active ? 'page' : undefined}
+                                    >
+                                        <span className="mobile-bottom-nav__icon">{item.icon as ReactNode}</span>
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </nav>
+                )}
             </Layout>
         </Layout>
     );

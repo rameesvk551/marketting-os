@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import type { LeadRecord, LeadStatus } from '../data/leads';
 
 export type LeadStatusFilter = LeadStatus | 'All';
@@ -6,9 +6,10 @@ export type LeadStatusFilter = LeadStatus | 'All';
 export function useLeadFilters(leads: LeadRecord[]) {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('All');
+    const deferredSearchTerm = useDeferredValue(searchTerm);
 
     const searchedLeads = useMemo(() => {
-        const query = searchTerm.trim().toLowerCase();
+        const query = deferredSearchTerm.trim().toLowerCase();
         if (!query) return leads;
 
         return leads.filter((lead) => {
@@ -22,7 +23,7 @@ export function useLeadFilters(leads: LeadRecord[]) {
             const matchesTag = lead.tags.some((tag) => tag.toLowerCase().includes(query));
             return matchesField || matchesTag;
         });
-    }, [leads, searchTerm]);
+    }, [deferredSearchTerm, leads]);
 
     const filteredLeads = useMemo(() => {
         if (statusFilter === 'All') return searchedLeads;

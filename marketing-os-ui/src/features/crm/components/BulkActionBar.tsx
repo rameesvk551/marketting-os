@@ -26,69 +26,78 @@ export const BulkActionBar: React.FC<Props> = ({
     if (count === 0) return null;
 
     return (
-        <div className="flex items-center gap-3 rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-2 text-sm">
-            <span className="font-semibold text-indigo-700">{count} selected</span>
-
-            {/* Status dropdown */}
-            <div className="relative">
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-indigo-700">{count} selected</span>
                 <button
-                    className="flex items-center gap-1 rounded bg-white px-3 py-1 border border-indigo-200 hover:bg-indigo-100 text-indigo-700"
-                    onClick={() => { setShowStatus(!showStatus); setShowAssign(false); }}
+                    type="button"
+                    className="rounded-full p-1 text-slate-400 transition hover:bg-white hover:text-slate-700"
+                    onClick={onClear}
+                    aria-label="Clear selection"
                 >
-                    <ArrowRightCircle size={14} /> Move to
+                    <X size={16} />
                 </button>
-                {showStatus && (
-                    <ul className="absolute left-0 top-full z-10 mt-1 w-36 rounded border bg-white shadow-lg">
-                        {LEAD_STATUS_ORDER.map((s) => (
-                            <li key={s}>
-                                <button
-                                    className="w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
-                                    onClick={() => { onBulkStatusChange(s); setShowStatus(false); }}
-                                >
-                                    {s}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
             </div>
 
-            {/* Assign dropdown */}
-            <div className="relative">
+            <div className="mt-3 flex flex-wrap gap-2">
+                <div className="relative">
+                    <button
+                        type="button"
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 font-medium text-indigo-700 transition hover:bg-indigo-100"
+                        onClick={() => { setShowStatus(!showStatus); setShowAssign(false); }}
+                    >
+                        <ArrowRightCircle size={14} /> Move to
+                    </button>
+                    {showStatus && (
+                        <ul className="absolute left-0 top-full z-10 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                            {LEAD_STATUS_ORDER.map((s) => (
+                                <li key={s}>
+                                    <button
+                                        type="button"
+                                        className="w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-indigo-50"
+                                        onClick={() => { onBulkStatusChange(s); setShowStatus(false); }}
+                                    >
+                                        {s}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="relative">
+                    <button
+                        type="button"
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-indigo-200 bg-white px-3 py-2 font-medium text-indigo-700 transition hover:bg-indigo-100"
+                        onClick={() => { setShowAssign(!showAssign); setShowStatus(false); }}
+                    >
+                        <UserCheck size={14} /> Assign
+                    </button>
+                    {showAssign && (
+                        <ul className="absolute left-0 top-full z-10 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                            {AGENTS.map((a) => (
+                                <li key={a}>
+                                    <button
+                                        type="button"
+                                        className="w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-indigo-50"
+                                        onClick={() => { onBulkAssign(a); setShowAssign(false); }}
+                                    >
+                                        {a}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
                 <button
-                    className="flex items-center gap-1 rounded bg-white px-3 py-1 border border-indigo-200 hover:bg-indigo-100 text-indigo-700"
-                    onClick={() => { setShowAssign(!showAssign); setShowStatus(false); }}
+                    type="button"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 font-medium text-red-600 transition hover:bg-red-100"
+                    onClick={onBulkDelete}
                 >
-                    <UserCheck size={14} /> Assign
+                    <Trash2 size={14} /> Delete
                 </button>
-                {showAssign && (
-                    <ul className="absolute left-0 top-full z-10 mt-1 w-44 rounded border bg-white shadow-lg">
-                        {AGENTS.map((a) => (
-                            <li key={a}>
-                                <button
-                                    className="w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
-                                    onClick={() => { onBulkAssign(a); setShowAssign(false); }}
-                                >
-                                    {a}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
             </div>
-
-            {/* Delete */}
-            <button
-                className="flex items-center gap-1 rounded bg-red-50 px-3 py-1 border border-red-200 text-red-600 hover:bg-red-100"
-                onClick={onBulkDelete}
-            >
-                <Trash2 size={14} /> Delete
-            </button>
-
-            {/* Clear selection */}
-            <button className="ml-auto text-gray-400 hover:text-gray-600" onClick={onClear}>
-                <X size={16} />
-            </button>
         </div>
     );
 };
