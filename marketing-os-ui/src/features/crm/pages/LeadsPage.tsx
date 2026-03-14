@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { startTransition, useMemo, useState } from 'react';
 import {
     DragKanbanBoard,
     LeadDrawer,
@@ -34,44 +34,33 @@ type CrmTab = 'leads' | 'deals' | 'tasks' | 'analytics';
 type LeadsViewMode = 'list' | 'kanban';
 
 const tabClass = (active: boolean) =>
-    `rounded-lg px-4 py-2 text-sm font-medium transition ${active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+    `inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+        active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     }`;
 
 const viewButtonClass = (active: boolean) =>
-    `rounded-lg px-3 py-2 text-sm font-medium transition ${active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+    `inline-flex w-full items-center justify-center rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+        active ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     }`;
 
 export function LeadsPage() {
-    /* ── top-level tabs ── */
     const [activeTab, setActiveTab] = useState<CrmTab>('leads');
     const [viewMode, setViewMode] = useState<LeadsViewMode>('list');
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
     const [addModalOpen, setAddModalOpen] = useState(false);
 
-    /* ── lead store (stateful CRUD) ── */
-    const { leads, addLead, updateLeadStatus, deleteLead: _deleteLead, bulkUpdateStatus, bulkDelete, bulkAssign } = useLeadStore();
-
-    /* ── filters on stateful leads ── */
+    const { leads, addLead, updateLeadStatus, bulkUpdateStatus, bulkDelete, bulkAssign } = useLeadStore();
     const { searchTerm, setSearchTerm, statusFilter, setStatusFilter, filteredLeads } = useLeadFilters(leads);
 
-    /* ── notes ── */
-    const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+    const leadIds = useMemo(() => leads.map((lead) => lead.id), [leads]);
     const { addLeadNote, getLeadNotes } = useLeadNotes(leadIds, DEFAULT_LEAD_NOTES);
 
-    /* ── stats ── */
     const stats = useLeadStats(leads);
-
-    /* ── activities for selected lead ── */
     const leadActivities = useLeadActivities(selectedLead?.id ?? null);
-
-    /* ── bulk selection ── */
     const { selected, toggle, selectAll, clearAll, isSelected, count: bulkCount } = useBulkSelection();
-
-    /* ── deals ── */
     const { deals: allDeals, byStage, totals, weighted, moveDeal, stages } = useDeals();
 
-    /* ── tasks ── */
     const {
         tasks: allTasks,
         byStatus: tasksByStatus,
@@ -83,7 +72,6 @@ export function LeadsPage() {
         setFilterPriority: setTaskFilterPriority,
     } = useTasks();
 
-    /* ── handlers ── */
     const openLeadDrawer = (lead: LeadRecord) => {
         setSelectedLead(lead);
         setDrawerOpen(true);
@@ -110,57 +98,69 @@ export function LeadsPage() {
     };
 
     const selectedLeadNotes = selectedLead ? getLeadNotes(selectedLead.id) : DEFAULT_LEAD_NOTES;
+    const changeTab = (tab: CrmTab) => startTransition(() => setActiveTab(tab));
+    const changeViewMode = (mode: LeadsViewMode) => startTransition(() => setViewMode(mode));
 
     return (
-        <section className="min-h-full rounded-2xl bg-gradient-to-b from-slate-100 via-slate-50 to-white p-4 sm:p-6">
+        <section className="min-h-full rounded-[28px] bg-gradient-to-b from-slate-100 via-slate-50 to-white p-3 sm:p-6">
             <div className="space-y-4">
-                {/* ── Header with tabs ── */}
                 <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">CRM</h1>
-                        <p className="text-sm text-slate-500">Leads, deals, and tasks — all in one place.</p>
+                        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">CRM</h1>
+                        <p className="max-w-xl text-sm text-slate-500">
+                            Leads, deals, and tasks in one mobile-first sales workspace.
+                        </p>
                     </div>
 
-                    <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                        <button type="button" onClick={() => setActiveTab('leads')} className={tabClass(activeTab === 'leads')}>
+                    <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto sm:grid-cols-none">
+                        <button type="button" onClick={() => changeTab('leads')} className={tabClass(activeTab === 'leads')}>
                             Leads
                         </button>
-                        <button type="button" onClick={() => setActiveTab('deals')} className={tabClass(activeTab === 'deals')}>
+                        <button type="button" onClick={() => changeTab('deals')} className={tabClass(activeTab === 'deals')}>
                             Deals
                         </button>
-                        <button type="button" onClick={() => setActiveTab('tasks')} className={tabClass(activeTab === 'tasks')}>
+                        <button type="button" onClick={() => changeTab('tasks')} className={tabClass(activeTab === 'tasks')}>
                             Tasks
                         </button>
-                        <button type="button" onClick={() => setActiveTab('analytics')} className={tabClass(activeTab === 'analytics')}>
+                        <button
+                            type="button"
+                            onClick={() => changeTab('analytics')}
+                            className={tabClass(activeTab === 'analytics')}
+                        >
                             Analytics
                         </button>
                     </div>
                 </header>
 
-                {/* ═══════ LEADS TAB ═══════ */}
                 {activeTab === 'leads' && (
                     <>
-                        {/* Toolbar */}
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                                <button type="button" onClick={() => setViewMode('list')} className={viewButtonClass(viewMode === 'list')}>
+                            <div className="grid w-full grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm sm:inline-flex sm:w-auto sm:grid-cols-none">
+                                <button
+                                    type="button"
+                                    onClick={() => changeViewMode('list')}
+                                    className={viewButtonClass(viewMode === 'list')}
+                                >
                                     List
                                 </button>
-                                <button type="button" onClick={() => setViewMode('kanban')} className={viewButtonClass(viewMode === 'kanban')}>
+                                <button
+                                    type="button"
+                                    onClick={() => changeViewMode('kanban')}
+                                    className={viewButtonClass(viewMode === 'kanban')}
+                                >
                                     Kanban
                                 </button>
                             </div>
 
                             <button
                                 type="button"
-                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shadow-sm"
+                                className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:w-auto"
                                 onClick={() => setAddModalOpen(true)}
                             >
                                 + New Lead
                             </button>
                         </div>
 
-                        {/* Bulk actions bar */}
                         <BulkActionBar
                             count={bulkCount}
                             onClear={clearAll}
@@ -184,7 +184,7 @@ export function LeadsPage() {
                                     onWhatsAppLead={openLeadDrawer}
                                     isSelected={isSelected}
                                     onToggleSelect={toggle}
-                                    onSelectAll={() => selectAll(filteredLeads.map((l) => l.id))}
+                                    onSelectAll={() => selectAll(filteredLeads.map((lead) => lead.id))}
                                     onClearAll={clearAll}
                                 />
                             </>
@@ -196,43 +196,35 @@ export function LeadsPage() {
                             />
                         )}
 
-                        {/* Add Lead Modal */}
                         <AddLeadModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSubmit={addLead} />
                     </>
                 )}
 
-                {/* ═══════ ANALYTICS TAB ═══════ */}
                 {activeTab === 'analytics' && (
                     <>
-                        {/* KPI Stats */}
                         <StatsBar stats={stats} />
 
-                        {/* Lead Analytics */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <SourceChart stats={stats} />
                             <StatusChart stats={stats} />
                         </div>
 
-                        {/* Funnel & Agent Performance */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <ConversionFunnel stats={stats} />
                             <AgentPerformance leads={leads} />
                         </div>
 
-                        {/* Deal & Task Analytics */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <DealValueChart deals={allDeals} />
                             <TasksOverviewChart tasks={allTasks} />
                         </div>
 
-                        {/* Tags */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <TopTagsChart leads={leads} />
                         </div>
                     </>
                 )}
 
-                {/* ═══════ DEALS TAB ═══════ */}
                 {activeTab === 'deals' && (
                     <DealsPipeline
                         stages={stages}
@@ -243,7 +235,6 @@ export function LeadsPage() {
                     />
                 )}
 
-                {/* ═══════ TASKS TAB ═══════ */}
                 {activeTab === 'tasks' && (
                     <TaskManager
                         byStatus={tasksByStatus}
@@ -257,7 +248,6 @@ export function LeadsPage() {
                 )}
             </div>
 
-            {/* Drawer */}
             <LeadDrawer
                 lead={selectedLead}
                 open={drawerOpen}

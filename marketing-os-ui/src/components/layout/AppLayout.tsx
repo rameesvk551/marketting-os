@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Typography, Avatar, Badge, Tooltip, Drawer, Dropdown } from 'antd';
@@ -191,33 +191,24 @@ function getSelectedMenuKey(pathname: string) {
 }
 
 export function AppLayout() {
-    const [collapsed, setCollapsed] = useState(false);
+    const [desktopCollapsed, setDesktopCollapsed] = useState(false);
     const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
     const [openKeys, setOpenKeys] = useState<string[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { isMobile, isTablet } = useResponsive();
-
-    useEffect(() => {
-        if (isTablet) setCollapsed(true);
-        if (!isMobile && !isTablet) setCollapsed(false);
-    }, [isMobile, isTablet]);
-
-    useEffect(() => {
-        setMobileDrawerOpen(false);
-    }, [location.pathname]);
-
-    useEffect(() => {
-        if (location.pathname.startsWith('/configure-business')) {
-            setOpenKeys(['/configure-business']);
-        }
-    }, [location.pathname]);
+    const collapsed = !isMobile && (isTablet || desktopCollapsed);
 
     const pageMeta = useMemo(() => getPageMeta(location.pathname), [location.pathname]);
     const selectedKey = useMemo(() => getSelectedMenuKey(location.pathname), [location.pathname]);
     const userInitial = user?.name?.charAt(0).toUpperCase() || 'U';
     const sidebarWidth = collapsed ? 84 : 288;
+    const menuOpenKeys = collapsed && !isMobile
+        ? []
+        : location.pathname.startsWith('/configure-business')
+            ? Array.from(new Set(['/configure-business', ...openKeys]))
+            : openKeys;
 
     const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
         navigate(key);
@@ -331,7 +322,7 @@ export function AppLayout() {
                 mode="inline"
                 selectedKeys={[selectedKey]}
                 onClick={handleMenuClick}
-                openKeys={collapsed && !isMobile ? [] : openKeys}
+                openKeys={menuOpenKeys}
                 onOpenChange={(keys) => setOpenKeys(keys as string[])}
                 items={navItems}
                 style={{
@@ -390,7 +381,7 @@ export function AppLayout() {
                 {!isMobile && (
                     <button
                         type="button"
-                        onClick={() => setCollapsed((value) => !value)}
+                        onClick={() => setDesktopCollapsed((value) => !value)}
                         style={{
                             marginTop: 12,
                             width: '100%',
@@ -502,7 +493,7 @@ export function AppLayout() {
                 <Sider
                     collapsible
                     collapsed={collapsed}
-                    onCollapse={setCollapsed}
+                    onCollapse={setDesktopCollapsed}
                     trigger={null}
                     width={288}
                     collapsedWidth={84}

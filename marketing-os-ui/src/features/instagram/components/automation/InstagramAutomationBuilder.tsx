@@ -31,7 +31,14 @@ import {
 import { message as antMessage, Popconfirm, Spin } from 'antd';
 import { useInstagramAutomationStore } from './useInstagramAutomationStore';
 import { instagramApi } from '../../api/instagramApi';
-import { storeApi } from '../../../api/modules';
+import { storeApi } from '../../../../api/modules';
+import {
+  CATALOG_PRODUCTS,
+  COMMENT_EXAMPLES,
+  INSTAGRAM_AUTOMATION_NAV,
+  SUGGESTED_KEYWORDS,
+} from './mockData';
+import InstagramInboxWorkspace from '../inbox/InstagramInboxWorkspace';
 import type {
   AutomationBuilderFormValues,
   CatalogProduct,
@@ -161,6 +168,7 @@ const InstagramAutomationBuilder: React.FC = () => {
   const [expandedAutomationId, setExpandedAutomationId] = useState<string | null>(null);
   const [availableProducts, setAvailableProducts] = useState<CatalogProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [savedAutomations, setSavedAutomations] = useState<any[]>([]);
 
   const activePreviewTab = useInstagramAutomationStore((state) => state.activePreviewTab);
   const selectedNav = useInstagramAutomationStore((state) => state.selectedNav);
@@ -381,7 +389,7 @@ const InstagramAutomationBuilder: React.FC = () => {
           <button onClick={() => setSelectedNav('home')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-300/60 bg-lime-300 px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-lime-200"><Plus className="h-4 w-4" />New Automation</button>
           <div className="mt-6 space-y-1">
             {INSTAGRAM_AUTOMATION_NAV.map((item) => {
-              const Icon = NAV_ICON[item.id];
+              const Icon = NAV_ICON[item.id as keyof typeof NAV_ICON];
               const active = selectedNav === item.id;
               return (
                 <button key={item.id} onClick={() => setSelectedNav(item.id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
@@ -408,7 +416,7 @@ const InstagramAutomationBuilder: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {savedAutomations.map((automation) => {
+                {savedAutomations.map((automation: any) => {
                   const isExpanded = expandedAutomationId === automation.id;
                   return (
                     <div key={automation.id} className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
@@ -631,7 +639,7 @@ const InstagramAutomationBuilder: React.FC = () => {
                     <span key={field.id} className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-xs">{keywords[index]?.value || field.value}<button onClick={() => removeKeyword(index)} className="rounded p-0.5 hover:bg-white/10"><X className="h-3 w-3" /></button></span>
                   ))}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">{SUGGESTED_KEYWORDS.map((item) => <button key={item} onClick={() => addKeyword(item)} className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs hover:border-white/30">{item}</button>)}</div>
+                <div className="mt-2 flex flex-wrap gap-2">{SUGGESTED_KEYWORDS.map((item: string) => <button key={item} onClick={() => addKeyword(item)} className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs hover:border-white/30">{item}</button>)}</div>
                 <p className="mt-2 text-right text-xs text-slate-500">{keywordFields.length}/{MAX_KEYWORDS} keywords</p>
               </div>
             </Section>
@@ -830,7 +838,7 @@ const PhonePreview: React.FC<{
   simulationStep: number;
 }> = ({ activePreviewTab, setActivePreviewTab, keywords, blocks, products, availableProducts, optional, message, simulationStep }) => {
   const keyword = keywords[0] || 'link';
-  const resolveProduct = (id?: string): CatalogProduct => products.find((item) => item.id === id) || availableProducts.find((item) => item.id === id) || CATALOG_PRODUCTS.find((item) => item.id === id) || products[0] || availableProducts[0] || CATALOG_PRODUCTS[0];
+  const resolveProduct = (id?: string): CatalogProduct => products.find((item: CatalogProduct) => item.id === id) || availableProducts.find((item: CatalogProduct) => item.id === id) || CATALOG_PRODUCTS.find((item: CatalogProduct) => item.id === id) || products[0] || availableProducts[0] || CATALOG_PRODUCTS[0];
   
   return (
     <div className="mx-auto flex max-w-[430px] flex-col items-center">
@@ -920,7 +928,7 @@ const PhonePreview: React.FC<{
               
               {/* Comments List */}
               <div className="flex-1 overflow-y-auto p-4">
-                {COMMENT_EXAMPLES.map((item) => { 
+                {COMMENT_EXAMPLES.map((item: any) => { 
                   const hit = item.text.toLowerCase().includes(keyword.toLowerCase()); 
                   return (
                     <div key={item.id} className="mb-4 flex gap-3">
@@ -1056,7 +1064,7 @@ const PhonePreview: React.FC<{
                     <div key={block.id} className="w-full">
                       <p className="mb-2 px-1 text-[12px] text-slate-400">{block.text || 'Featured Products'}</p>
                       <div className="flex gap-2 overflow-x-auto pb-1">
-                        {list.map((product) => (
+                        {list.map((product: CatalogProduct) => (
                           <div key={product.id} className="min-w-[140px] overflow-hidden rounded-xl border border-white/10 bg-slate-800">
                             <img src={product.image} alt={product.name} className="h-24 w-full object-cover" />
                             <div className="p-2">
