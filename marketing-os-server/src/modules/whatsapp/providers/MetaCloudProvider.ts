@@ -199,9 +199,13 @@ export function createMetaCloudProvider(config: MetaConfig): IWhatsAppProvider {
       if (msg.interactive) {
         if (msg.interactive.button_reply) {
           message.selectedButtonId = msg.interactive.button_reply.id;
+          // Capture button title as textContent for UI display
+          message.textContent = { body: msg.interactive.button_reply.title };
         }
         if (msg.interactive.list_reply) {
           message.selectedListItemId = msg.interactive.list_reply.id;
+          // Capture list row title as textContent for UI display
+          message.textContent = { body: msg.interactive.list_reply.title };
         }
       }
 
