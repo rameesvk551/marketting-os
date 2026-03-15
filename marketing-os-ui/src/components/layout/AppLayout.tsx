@@ -11,7 +11,6 @@ import {
     BellOutlined,
     WhatsAppOutlined,
     InstagramOutlined,
-    MenuOutlined,
     CloseOutlined,
     ShopOutlined,
     AppstoreOutlined,
@@ -22,7 +21,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useResponsive } from '../../hooks/useResponsive';
 
-const { Sider, Content, Header } = Layout;
+const { Sider, Content } = Layout;
 const { Text } = Typography;
 
 type MenuItem = Required<MenuProps>['items'][number];
@@ -180,7 +179,6 @@ export function AppLayout() {
     const { isMobile, isTablet } = useResponsive();
     const collapsed = !isMobile && (isTablet || desktopCollapsed);
 
-    const pageMeta = useMemo(() => getPageMeta(location.pathname), [location.pathname]);
     const selectedKey = useMemo(() => getSelectedMenuKey(location.pathname), [location.pathname]);
     const userInitial = user?.name?.charAt(0).toUpperCase() || 'U';
     const sidebarWidth = collapsed ? 84 : 288;
@@ -385,74 +383,74 @@ export function AppLayout() {
         </div>
     );
 
-    const desktopActions = (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-            {!isMobile && user?.tenantName && (
-                <div
-                    style={{
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        background: 'rgba(79,70,229,0.08)',
-                        color: '#4338CA',
-                        fontSize: 12,
-                        fontWeight: 700,
-                    }}
-                >
-                    {user.tenantName}
-                </div>
-            )}
-            {!isMobile && (
-                <Tooltip title="Notifications">
-                    <button type="button" style={iconButtonStyle} aria-label="Open notifications">
-                        <Badge count={3} size="small">
-                            <BellOutlined style={{ fontSize: 18, color: '#475569' }} />
-                        </Badge>
-                    </button>
-                </Tooltip>
-            )}
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
-                <button
-                    type="button"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: isMobile ? 0 : '4px 6px 4px 4px',
-                        border: 0,
-                        background: 'transparent',
-                        cursor: 'pointer',
-                    }}
-                    aria-label="Open user menu"
-                >
-                    <Avatar
-                        style={{
-                            background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
-                            color: '#fff',
-                            boxShadow: '0 12px 24px rgba(79,70,229,0.24)',
-                        }}
-                        size={isMobile ? 36 : 40}
-                        icon={!user?.name ? <UserOutlined /> : undefined}
-                    >
-                        {user?.name ? userInitial : undefined}
-                    </Avatar>
-                    {!isMobile && (
-                        <div
-                            style={{
-                                display: 'flex',
-                                minWidth: 0,
-                                flexDirection: 'column',
-                                alignItems: 'flex-start',
-                                lineHeight: 1.15,
-                            }}
-                        >
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{user?.name || 'User'}</span>
-                            <span style={{ fontSize: 11, color: '#64748B' }}>{user?.role || 'Admin'}</span>
-                        </div>
-                    )}
-                </button>
-            </Dropdown>
-        </div>
-    );
+    // const desktopActions = (
+    //     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+    //         {!isMobile && user?.tenantName && (
+    //             <div
+    //                 style={{
+    //                     padding: '8px 12px',
+    //                     borderRadius: 999,
+    //                     background: 'rgba(79,70,229,0.08)',
+    //                     color: '#4338CA',
+    //                     fontSize: 12,
+    //                     fontWeight: 700,
+    //                 }}
+    //             >
+    //                 {user.tenantName}
+    //             </div>
+    //         )}
+    //         {!isMobile && (
+    //             <Tooltip title="Notifications">
+    //                 <button type="button" style={iconButtonStyle} aria-label="Open notifications">
+    //                     <Badge count={3} size="small">
+    //                         <BellOutlined style={{ fontSize: 18, color: '#475569' }} />
+    //                     </Badge>
+    //                 </button>
+    //             </Tooltip>
+    //         )}
+    //         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
+    //             <button
+    //                 type="button"
+    //                 style={{
+    //                     display: 'flex',
+    //                     alignItems: 'center',
+    //                     gap: 10,
+    //                     padding: isMobile ? 0 : '4px 6px 4px 4px',
+    //                     border: 0,
+    //                     background: 'transparent',
+    //                     cursor: 'pointer',
+    //                 }}
+    //                 aria-label="Open user menu"
+    //             >
+    //                 <Avatar
+    //                     style={{
+    //                         background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+    //                         color: '#fff',
+    //                         boxShadow: '0 12px 24px rgba(79,70,229,0.24)',
+    //                     }}
+    //                     size={isMobile ? 36 : 40}
+    //                     icon={!user?.name ? <UserOutlined /> : undefined}
+    //                 >
+    //                     {user?.name ? userInitial : undefined}
+    //                 </Avatar>
+    //                 {!isMobile && (
+    //                     <div
+    //                         style={{
+    //                             display: 'flex',
+    //                             minWidth: 0,
+    //                             flexDirection: 'column',
+    //                             alignItems: 'flex-start',
+    //                             lineHeight: 1.15,
+    //                         }}
+    //                     >
+    //                         <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{user?.name || 'User'}</span>
+    //                         <span style={{ fontSize: 11, color: '#64748B' }}>{user?.role || 'Admin'}</span>
+    //                     </div>
+    //                 )}
+    //             </button>
+    //         </Dropdown>
+    //     </div>
+    // );
 
     return (
         <Layout style={{ minHeight: '100svh', background: '#F8FAFC' }}>

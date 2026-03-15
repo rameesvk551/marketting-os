@@ -30,7 +30,6 @@ const WhatsAppChats: React.FC = () => {
         messagesEndRef,
         newChatModalOpen, setNewChatModalOpen,
         templatePickerOpen, setTemplatePickerOpen,
-        isConnected,
         isLoadingConversations, isLoadingMessages, isSending, isNewChatLoading,
         isLoadingTemplates, isSendingTemplate,
         conversations, messages, activeConv, filteredConversations,

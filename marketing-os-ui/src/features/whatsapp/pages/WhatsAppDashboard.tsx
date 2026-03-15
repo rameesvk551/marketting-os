@@ -20,7 +20,6 @@ import WhatsAppCatalog from '../components/WhatsAppCatalog';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
-const { Title } = Typography;
 
 const WhatsAppDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('chats');

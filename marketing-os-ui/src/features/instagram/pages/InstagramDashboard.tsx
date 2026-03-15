@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Layout, Tabs, Typography, theme } from 'antd';
 import {
     HomeOutlined,
-    WorkflowOutlined,
+    BranchesOutlined,
     MessageOutlined,
     FileTextOutlined,
     FolderOutlined,
@@ -17,7 +17,6 @@ import InstagramAnalytics from '../components/InstagramAnalytics';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const { Content } = Layout;
-const { Title } = Typography;
 
 const InstagramDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState('home');
@@ -40,7 +39,7 @@ const InstagramDashboard: React.FC = () => {
             key: 'automations',
             label: (
                 <span style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 500 }}>
-                    <WorkflowOutlined /> {!isMobile && 'Automations'}
+                    <BranchesOutlined /> {!isMobile && 'Automations'}
                 </span>
             ),
             children: <InstagramAutomationsList />,

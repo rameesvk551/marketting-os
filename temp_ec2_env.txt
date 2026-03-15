@@ -1,0 +1,53 @@
+# Environment
+NODE_ENV=production
+PORT=8000
+
+# Database (PostgreSQL inside Docker)
+# Since the app runs on the host (EC2) and DB is in Docker with ports mapped:
+DATABASE_URL=postgresql://edger_user:edger_pass@localhost:5436/travel_ops
+POSTGRES_URL=postgresql://edger_user:edger_pass@localhost:5436/travel_ops
+DATABASE_POOL_MIN=2
+DATABASE_POOL_MAX=20 # Increased for production
+
+# JWT
+# IMPORTANT: Change this to a strong, random string in production!
+# You can generate one using: openssl rand -base64 32
+JWT_SECRET=CHANGE_THIS_TO_A_STRONG_RANDOM_SECRET_KEY
+JWT_EXPIRES_IN=7d
+
+# Tenant
+DEFAULT_TENANT_SLUG=default
+
+# CORS
+# IMPORTANT: Change this to your actual production frontend domain!
+# Example: CORS_ORIGIN=https://app.marketing-os.com
+CORS_ORIGIN=http://YOUR_EC2_IP_OR_DOMAIN
+
+# Redis (Inside Docker)
+REDIS_HOST=localhost
+REDIS_PORT=6378
+
+# MongoDB (Inside Docker)
+MONGO_URI=mongodb://localhost:27018/marketing-os?directConnection=true
+WHATSAPP_VERIFY_TOKEN=my_whatsapp_secret_123
+
+# Provider: 'meta' | 'mock' (use 'mock' for testing without real API)
+WHATSAPP_PROVIDER=meta
+
+# Meta (Facebook) WhatsApp Cloud API - Wayon App
+# Get these from Meta Business Suite > WhatsApp > API Setup
+WHATSAPP_ACCESS_TOKEN=EAAhBw75WTTkBQ7br98z4rmXGL3p8nCi91QjmZBgQxsAN1nOKfzTMkpOT9MXdZCB69x0MjVIyhXmrP5Ld9ZCJpp70kMqM9xtZCZAFvmYKLdiszhOILDJqbcuaO2qCtZAJmqybmZCgugp3opvaJD03SrNVnKXmIvHvZB0wGMRjgiCp61ZAKZCS4NjNy7tqu7BEka1axZC1lpi6AMAypdMh3qrDKIYspIaFTSS2rZCBlU29
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=trailexpo-whatsapp-verify-2026
+# Meta Business Suite > WhatsApp > API Setup
+WHATSAPP_PHONE_NUMBER_ID=919556244575947
+WHATSAPP_BUSINESS_ACCOUNT_ID=864633239519648
+WHATSAPP_API_VERSION=v24.0
+
+# Webhook security (create your own secret for webhook verification)
+WHATSAPP_APP_SECRET=tkbtbknbkrn
+
+
+META_APP_SECRET=7e85f5f4b0b77c0096579e5792644fe1
+
+META_APP_ID=2324108781440313
+CORS_ORIGIN=https://app.wayon.in
