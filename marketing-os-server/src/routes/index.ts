@@ -8,6 +8,7 @@ import { createRouter as createCatalogRouter } from '../modules/catalog/catalog.
 import { createRouter as createContactRouter } from '../modules/contacts/contacts.router.js';
 import { createOrderRouter } from '../modules/orders/order.routes.js';
 import { createProductRouter } from '../modules/products/product.routes.js';
+import { createPartnerRouter } from '../modules/partner/partner.routes.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -19,5 +20,6 @@ router.use('/catalog', createCatalogRouter());
 router.use('/settings', createSettingsRouter());
 router.use('/store', createStoreRouter());
 router.use('/contacts', createContactRouter());
+router.use('/partner', createPartnerRouter());
 
 export default router;

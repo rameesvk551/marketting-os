@@ -17,6 +17,8 @@ import {
     PlusOutlined,
     FileTextOutlined,
     ShopOutlined,
+    CaretDownOutlined,
+    SettingOutlined,
 } from '@ant-design/icons';
 import { useChats, pickColor, initials, formatTime } from '../hooks/useChats';
 
@@ -50,25 +52,33 @@ const WhatsAppChats: React.FC = () => {
         <div style={S.root}>
             {/* ─────────── LEFT PANEL ─────────── */}
             <div style={S.leftPanel}>
-                <div style={S.leftHeader}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <WhatsAppOutlined style={{ fontSize: 22, color: '#00a884' }} />
-                        <span style={{ fontSize: 18, fontWeight: 700, color: '#111b21' }}>Chats</span>
-                        <Tooltip title={isConnected ? 'Live — real-time updates active' : 'Offline — using polling fallback'}>
-                            <span style={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                background: isConnected ? '#00a884' : '#f5222d',
-                                display: 'inline-block', marginLeft: 4,
-                                boxShadow: isConnected ? '0 0 6px rgba(0,168,132,0.6)' : 'none',
-                                transition: 'background 0.3s, box-shadow 0.3s',
-                            }} />
-                        </Tooltip>
-                    </div>
-                    <Tooltip title="Start New Chat">
-                        <button onClick={() => setNewChatModalOpen(true)} style={S.newChatBtn}>
-                            <PlusOutlined style={{ fontSize: 14 }} /> New Chat
+                <div style={S.leftHeaderWrapper}>
+                    <div style={S.platformNameSection}>
+                        <button style={S.platformNameBtn}>
+                            <WhatsAppOutlined style={{ fontSize: 20, color: '#00a884', marginRight: 6 }} />
+                            <span style={{ fontSize: 16, fontWeight: 600, color: '#111b21' }}>WhatsApp</span>
+                            <CaretDownOutlined style={{ fontSize: 12, color: '#8696a0', marginLeft: 4 }} />
                         </button>
-                    </Tooltip>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <Tooltip title="Start New Chat">
+                                <button onClick={() => setNewChatModalOpen(true)} style={S.newChatBtn}>
+                                    <PlusOutlined style={{ fontSize: 12 }} /> New Chat
+                                </button>
+                            </Tooltip>
+                            <button style={S.settingsBtn}>
+                                <SettingOutlined style={{ fontSize: 16, color: '#54656f' }} />
+                            </button>
+                        </div>
+                    </div>
+                    <div style={S.inboxSection}>
+                        <button style={S.inboxBtn}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: '#54656f' }}>Inbox</span>
+                            <span style={S.inboxBadge}>
+                                {filteredConversations.length}
+                            </span>
+                            <CaretDownOutlined style={{ fontSize: 11, color: '#8696a0', marginLeft: 4 }} />
+                        </button>
+                    </div>
                 </div>
 
                 <div style={S.searchWrap}>
@@ -472,8 +482,14 @@ const WhatsAppChats: React.FC = () => {
 const S: Record<string, React.CSSProperties> = {
     root: { display: 'flex', height: 'calc(100vh - 180px)', minHeight: 500, background: '#fff', borderRadius: 8, overflow: 'hidden', border: '1px solid #e9edef' },
     leftPanel: { width: 340, minWidth: 300, borderRight: '1px solid #e9edef', display: 'flex', flexDirection: 'column', background: '#fff' },
-    leftHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', height: 59, background: '#f0f2f5' },
-    searchWrap: { padding: '8px 12px', background: '#f0f2f5' },
+    leftHeaderWrapper: { padding: '12px 16px', background: '#fff', borderBottom: '1px solid #e9edef' },
+    platformNameSection: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    platformNameBtn: { display: 'flex', alignItems: 'center', gap: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 16, outline: 'none', flex: 1 },
+    settingsBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px', borderRadius: 4, transition: 'background 0.15s', outline: 'none' },
+    inboxSection: { marginBottom: 0 },
+    inboxBtn: { display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 12, outline: 'none' },
+    inboxBadge: { display: 'inline-flex', height: 20, minWidth: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: '#f0f2f5', paddingLeft: 4, paddingRight: 4, fontSize: 11, color: '#54656f', fontWeight: 500 },
+    searchWrap: { padding: '8px 12px', background: '#fff' },
     searchInput: { borderRadius: 8, border: 'none', background: '#fff', height: 35 },
     chatList: { flex: 1, overflowY: 'auto' as const },
     chatItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid #f0f2f5', transition: 'background 0.15s' },

@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import {
-    Card, Typography, Switch, Form, Input, Button, Select, Space, Tabs, Table, Tag,
-    Divider, Modal, InputNumber, Alert, Row, Col
+    Card, Typography, Switch, Form, Input, Button, Select, Space, Tabs,
+    Divider, Modal, InputNumber, Alert, Row, Col, Statistic
 } from 'antd';
 import {
     ShoppingCartOutlined, ShopOutlined, SendOutlined, PlusOutlined,
-    AppstoreOutlined, FileTextOutlined, TagsOutlined, EyeOutlined
+    AppstoreOutlined, FileTextOutlined, TagsOutlined,
+    SyncOutlined, CloudSyncOutlined, HistoryOutlined
 } from '@ant-design/icons';
 import { useCatalog } from '../hooks/useCatalog';
+import { useCatalogConfig, useSyncLogs, useSyncAllProducts } from '../../catalog/hooks/useCatalog';
+import CatalogConnectionCard from '../../catalog/components/CatalogConnectionCard';
+import SyncHistoryTable from '../../catalog/components/SyncHistoryTable';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -16,12 +20,25 @@ const { Option } = Select;
 const WhatsAppCatalog: React.FC = () => {
     const {
         commerceSettings, settingsLoading, updateCommerceSettings,
-        products, productsLoading,
         sending,
         createCatalogTemplate, sendCatalogTemplate,
         sendCatalogMessage, sendSingleProduct,
         sendMultiProduct,
     } = useCatalog();
+
+    // Catalog syncing hooks
+    const { data: configData, isLoading: configLoading } = useCatalogConfig();
+    const { data: logsData, isLoading: logsLoading } = useSyncLogs(20);
+    const syncAllMutation = useSyncAllProducts();
+
+    const config = configData?.data;
+    const logs = logsData?.data || [];
+    const isConnected = config?.connectionStatus === 'active';
+
+    // Compute stats from logs
+    const lastSync = logs[0];
+    const totalSynced = logs.reduce((acc: number, log: any) => acc + (log.syncedCount || 0), 0);
+    const totalFailed = logs.reduce((acc: number, log: any) => acc + (log.failedCount || 0), 0);
 
     const [catalogTemplateForm] = Form.useForm();
     const [sendTemplateForm] = Form.useForm();
@@ -118,13 +135,6 @@ const WhatsAppCatalog: React.FC = () => {
         const matches = text.match(/\{\{\d+\}\}/g);
         return matches ? matches.length : 0;
     };
-
-    const productColumns = [
-        { title: 'Name', dataIndex: 'productName', key: 'productName', render: (t: string) => <Text strong>{t}</Text> },
-        { title: 'SKU', dataIndex: 'sku', key: 'sku', render: (t: string) => <Tag>{t || 'N/A'}</Tag> },
-        { title: 'Price', dataIndex: 'price', key: 'price', render: (p: number, r: any) => `${r.currency || 'INR'} ${p}` },
-        { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={s === 'active' ? 'green' : 'default'}>{s}</Tag> },
-    ];
 
     return (
         <div style={{ padding: 24 }}>
@@ -254,17 +264,116 @@ const WhatsAppCatalog: React.FC = () => {
                     ),
                 },
                 {
-                    key: 'products',
-                    label: <><EyeOutlined /> Products</>,
+                    key: 'catalog-sync',
+                    label: <><SyncOutlined /> Catalog Sync</>,
                     children: (
                         <div>
-                            <Table
-                                columns={productColumns}
-                                dataSource={products}
-                                rowKey={(r) => r._id || r.id || r.sku}
-                                loading={productsLoading}
-                                pagination={{ pageSize: 10 }}
-                            />
+                            {/* Header */}
+                            <div style={{ marginBottom: 24 }}>
+                                <Space align="center" style={{ marginBottom: 4 }}>
+                                    <CloudSyncOutlined style={{ fontSize: 24, color: '#4F46E5' }} />
+                                    <Typography.Title level={4} style={{ margin: 0 }}>Sync to Meta Product Catalog</Typography.Title>
+                                </Space>
+                                <Typography.Text type="secondary" style={{ display: 'block', fontSize: 14 }}>
+                                    Sync your products to Meta — power Instagram Shopping, WhatsApp Commerce & Dynamic Ads
+                                </Typography.Text>
+                            </div>
+
+                            {/* Connection Card */}
+                            <div style={{ marginBottom: 24 }}>
+                                <CatalogConnectionCard config={configData} isLoading={configLoading} />
+                            </div>
+
+                            {/* Stats Row */}
+                            {isConnected && (
+                                <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                                    <Col xs={24} sm={8}>
+                                        <Card
+                                            style={{ borderRadius: 12, background: 'linear-gradient(135deg, #F0F5FF, #FFFFFF)', border: '1px solid #D6E4FF' }}
+                                        >
+                                            <Statistic
+                                                title={<span style={{ color: '#64748B' }}>Total Products Synced</span>}
+                                                value={totalSynced}
+                                                prefix={<CloudSyncOutlined style={{ color: '#4F46E5' }} />}
+                                                valueStyle={{ color: '#4F46E5', fontWeight: 700 }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                    <Col xs={24} sm={8}>
+                                        <Card
+                                            style={{ borderRadius: 12, background: 'linear-gradient(135deg, #F6FFED, #FFFFFF)', border: '1px solid #B7EB8F' }}
+                                        >
+                                            <Statistic
+                                                title={<span style={{ color: '#64748B' }}>Last Sync Status</span>}
+                                                value={lastSync ? lastSync.status.charAt(0).toUpperCase() + lastSync.status.slice(1) : 'N/A'}
+                                                prefix={<HistoryOutlined style={{ color: '#52C41A' }} />}
+                                                valueStyle={{ color: '#52C41A', fontWeight: 700 }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                    <Col xs={24} sm={8}>
+                                        <Card
+                                            style={{ borderRadius: 12, background: totalFailed > 0 ? 'linear-gradient(135deg, #FFF2F0, #FFFFFF)' : 'linear-gradient(135deg, #F0F5FF, #FFFFFF)', border: totalFailed > 0 ? '1px solid #FFCCC7' : '1px solid #D6E4FF' }}
+                                        >
+                                            <Statistic
+                                                title={<span style={{ color: '#64748B' }}>Failed Syncs</span>}
+                                                value={totalFailed}
+                                                prefix={<ShopOutlined style={{ color: totalFailed > 0 ? '#FF4D4F' : '#4F46E5' }} />}
+                                                valueStyle={{ color: totalFailed > 0 ? '#FF4D4F' : '#4F46E5', fontWeight: 700 }}
+                                            />
+                                        </Card>
+                                    </Col>
+                                </Row>
+                            )}
+
+                            {/* Sync History */}
+                            <Card
+                                title={
+                                    <Space>
+                                        <HistoryOutlined style={{ color: '#4F46E5' }} />
+                                        <span>Sync History</span>
+                                    </Space>
+                                }
+                                style={{ borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                                extra={
+                                    isConnected && (
+                                        <Button
+                                            type="primary"
+                                            icon={<SyncOutlined spin={syncAllMutation.isPending} />}
+                                            loading={syncAllMutation.isPending}
+                                            onClick={() => syncAllMutation.mutate()}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
+                                                border: 'none',
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Products'}
+                                        </Button>
+                                    )
+                                }
+                            >
+                                <SyncHistoryTable logs={logs} isLoading={logsLoading} />
+                            </Card>
+
+                            {/* Info Banner */}
+                            {!isConnected && !configLoading && (
+                                <Alert
+                                    message="Connect Your Meta Product Catalog"
+                                    description={
+                                        <span>
+                                            Once connected, your products will automatically sync to Meta's commerce ecosystem.
+                                            They'll be available for <strong>Instagram Shopping</strong> (product tags in posts),{' '}
+                                            <strong>WhatsApp Commerce</strong> (catalog messages), and{' '}
+                                            <strong>Advantage+ Catalog Ads</strong> (dynamic retargeting).
+                                        </span>
+                                    }
+                                    type="info"
+                                    showIcon
+                                    style={{ marginTop: 24, borderRadius: 12 }}
+                                    closable
+                                />
+                            )}
                         </div>
                     ),
                 },

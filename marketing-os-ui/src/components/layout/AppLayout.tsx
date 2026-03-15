@@ -9,7 +9,6 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     BellOutlined,
-    TeamOutlined,
     WhatsAppOutlined,
     InstagramOutlined,
     MenuOutlined,
@@ -38,11 +37,6 @@ const configureBusinessChildren = [
 
 const navItems: MenuItem[] = [
     {
-        key: '/crm',
-        icon: <TeamOutlined />,
-        label: 'CRM',
-    },
-    {
         key: '/whatsapp',
         icon: <WhatsAppOutlined />,
         label: 'WhatsApp',
@@ -69,12 +63,6 @@ const navItems: MenuItem[] = [
 ];
 
 const mobilePrimaryNav = [
-    {
-        key: '/crm',
-        label: 'CRM',
-        icon: <TeamOutlined />,
-        matches: (path: string) => path === '/' || path.startsWith('/crm'),
-    },
     {
         key: '/whatsapp',
         label: 'WA',
@@ -149,14 +137,6 @@ function getPageMeta(pathname: string) {
             section: 'Store Ops',
             title: activeChild?.label ?? 'Configure Business',
             description: 'Update catalog, orders, and payment details in a touch-first workflow.',
-        };
-    }
-
-    if (pathname.startsWith('/catalog')) {
-        return {
-            section: 'Commerce',
-            title: 'Catalog',
-            description: 'Connect products and sync inventory without leaving the main app shell.',
         };
     }
 
@@ -522,84 +502,12 @@ export function AppLayout() {
                         'radial-gradient(circle at top right, rgba(79,70,229,0.08), transparent 24%), linear-gradient(180deg, #ffffff 0%, #f8fafc 220px, #f4f7fb 100%)',
                 }}
             >
-                <Header
-                    style={{
-                        background: 'rgba(255,255,255,0.78)',
-                        backdropFilter: 'blur(18px)',
-                        padding: isMobile ? '0 16px' : '0 28px',
-                        height: 'var(--header-height, 64px)',
-                        lineHeight: 'normal',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderBottom: '1px solid rgba(226,232,240,0.85)',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 40,
-                        gap: 16,
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                        {isMobile && (
-                            <button
-                                type="button"
-                                onClick={() => setMobileDrawerOpen(true)}
-                                style={iconButtonStyle}
-                                aria-label="Open navigation"
-                            >
-                                <MenuOutlined style={{ fontSize: 18 }} />
-                            </button>
-                        )}
-                        <div style={{ minWidth: 0 }}>
-                            <Text
-                                style={{
-                                    display: 'block',
-                                    fontSize: 11,
-                                    fontWeight: 800,
-                                    letterSpacing: '0.12em',
-                                    textTransform: 'uppercase',
-                                    color: '#64748B',
-                                }}
-                            >
-                                {pageMeta.section}
-                            </Text>
-                            <Text
-                                strong
-                                style={{
-                                    display: 'block',
-                                    fontSize: isMobile ? 18 : 22,
-                                    lineHeight: 1.1,
-                                    color: '#0F172A',
-                                    fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-                                }}
-                            >
-                                {pageMeta.title}
-                            </Text>
-                            {!isMobile && (
-                                <Text
-                                    style={{
-                                        display: 'block',
-                                        marginTop: 4,
-                                        maxWidth: isTablet ? 420 : 560,
-                                        fontSize: 13,
-                                        color: '#64748B',
-                                    }}
-                                >
-                                    {pageMeta.description}
-                                </Text>
-                            )}
-                        </div>
-                    </div>
-
-                    {desktopActions}
-                </Header>
-
                 <Content
                     style={{
                         padding: isMobile
                             ? '14px var(--page-padding, 16px) calc(var(--mobile-nav-height, 84px) + 22px)'
                             : 'var(--page-padding, 16px)',
-                        minHeight: 'calc(100svh - var(--header-height, 64px))',
+                        minHeight: '100svh',
                         overflowX: 'hidden',
                     }}
                 >

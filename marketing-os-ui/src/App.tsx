@@ -34,6 +34,24 @@ const InstagramAutomationPage = lazy(() =>
 const CatalogDashboard = lazy(() =>
   import('./features/catalog').then((module) => ({ default: module.CatalogDashboard }))
 );
+const PartnerLayout = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerLayout }))
+);
+const PartnerDashboardPage = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerDashboardPage }))
+);
+const PartnerCustomersPage = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerCustomersPage }))
+);
+const PartnerCommissionsPage = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerCommissionsPage }))
+);
+const PartnerWithdrawPage = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerWithdrawPage }))
+);
+const PartnerSettingsPage = lazy(() =>
+  import('./features/partner').then((module) => ({ default: module.PartnerSettingsPage }))
+);
 const SettingsLayout = lazy(() =>
   import('./features/settings').then((module) => ({ default: module.SettingsLayout }))
 );
@@ -130,6 +148,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/signup" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/meta/callback" element={<MetaAuthCallback />} />
@@ -168,8 +187,15 @@ function App() {
                     </PrivateRoute>
                   }
                 >
-                  <Route index element={<Navigate to="crm" replace />} />
+                  <Route index element={<Navigate to="catalog" replace />} />
                   <Route path="crm" element={<CRMDashboard />} />
+                  <Route path="partner" element={<PartnerLayout />}>
+                    <Route index element={<PartnerDashboardPage />} />
+                    <Route path="customers" element={<PartnerCustomersPage />} />
+                    <Route path="commissions" element={<PartnerCommissionsPage />} />
+                    <Route path="withdraw" element={<PartnerWithdrawPage />} />
+                    <Route path="settings" element={<PartnerSettingsPage />} />
+                  </Route>
                   <Route path="whatsapp" element={<WhatsAppDashboard />} />
                   <Route path="instagram" element={<InstagramDashboard />} />
                   <Route path="instagram/automation" element={<InstagramAutomationPage />} />

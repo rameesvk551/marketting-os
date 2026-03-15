@@ -105,19 +105,8 @@ const WhatsAppDashboard: React.FC = () => {
     ];
 
     return (
-        <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+        <Layout style={{ minHeight: 'auto', background: '#f0f2f5' }}>
             <Content style={{ margin: isMobile ? '12px 8px' : '24px 24px' }}>
-                <div className="page-header">
-                    <div>
-                        <Title level={isMobile ? 4 : 2} style={{ margin: 0, fontWeight: 600, color: '#1f1f1f' }}>
-                            WhatsApp Marketing
-                        </Title>
-                        <Typography.Text type="secondary" style={{ fontSize: isMobile ? 13 : 16 }}>
-                            Manage campaigns, automation, and conversations
-                        </Typography.Text>
-                    </div>
-                </div>
-
                 <div
                     style={{
                         padding: 0,
@@ -125,7 +114,7 @@ const WhatsAppDashboard: React.FC = () => {
                         borderRadius: borderRadiusLG,
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                         overflow: 'hidden',
-                        minHeight: '80vh'
+                        minHeight: 'auto'
                     }}
                 >
                     <Tabs

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Briefcase, AlertCircle } from 'lucide-react';
 // import { authApi } from '@/api/authApi'; // TODO: Point to correct auth api or use fetch
 
@@ -20,6 +20,8 @@ import config from '../../config';
 
 const RegisterPage: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const referralCode = searchParams.get('ref')?.trim() || '';
 
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +83,8 @@ const RegisterPage: React.FC = () => {
                     email: formData.email,
                     password: formData.password,
                     // Add other fields if backend supports them or ignore
-                    companyCity: formData.companyCity
+                    companyCity: formData.companyCity,
+                    referralCode: referralCode || undefined,
                 }),
             });
 
@@ -117,6 +120,13 @@ const RegisterPage: React.FC = () => {
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Register your company</h1>
                         <p className="text-gray-600">Create your admin account and company space in minutes</p>
                     </div>
+
+                    {referralCode ? (
+                        <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Partner referral applied</p>
+                            <p className="mt-2 text-sm font-medium text-indigo-900">{referralCode}</p>
+                        </div>
+                    ) : null}
 
                     {/* Progress indicator */}
                     <ProgressIndicator currentStep={step} />

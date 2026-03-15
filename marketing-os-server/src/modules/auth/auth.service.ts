@@ -6,6 +6,7 @@ import { getConfig } from '../../config/env.js';
 import { AppError, UnauthorizedError } from '../../utils/apiError.js';
 import * as authRepository from './auth.repository.js';
 import axios from 'axios';
+import { registerReferredCustomer, resolvePartnerByReferralCode } from '../partner/partner.service.js';
 // Email module removed — stub until mailer is re-integrated
 const sendEmail = async (to: string, subject: string, html: string) => {
     console.log(`[EMAIL STUB] To: ${to}, Subject: ${subject}`);
@@ -21,6 +22,9 @@ import { AUTH } from '../../config/constants.js';
 
 export const register = async (data: RegisterDTO): Promise<AuthResponse> => {
     const config = getConfig();
+    const referralPartner = data.referralCode
+        ? await resolvePartnerByReferralCode(data.referralCode)
+        : null;
 
     // 1. Check if user already exists
     const existingUser = await authRepository.findUserByEmail(data.email);
@@ -35,6 +39,10 @@ export const register = async (data: RegisterDTO): Promise<AuthResponse> => {
     const existingTenant = await authRepository.findTenantBySlug(slug);
     if (existingTenant) {
         throw new AppError('A tenant with this name already exists', 409);
+    }
+
+    if (data.referralCode && !referralPartner) {
+        throw new AppError('Invalid referral code', 400, 'INVALID_REFERRAL_CODE');
     }
 
     const tenant = await authRepository.createTenant({
@@ -56,6 +64,16 @@ export const register = async (data: RegisterDTO): Promise<AuthResponse> => {
         role: 'admin',
         is_active: true,
     });
+
+    if (referralPartner) {
+        await registerReferredCustomer({
+            businessName: tenant.name,
+            email: user.email,
+            partnerId: referralPartner.id,
+            tenantId: tenant.id,
+            plan: 'trial',
+        });
+    }
 
     // 5. Create billing trial if available (Placeholder to adapt billing integration if accessed globally)
     // if (billingService) {

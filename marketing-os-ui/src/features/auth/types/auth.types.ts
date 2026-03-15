@@ -11,6 +11,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   companyCity: string;
+  referralCode?: string;
 }
 
 export interface ForgotPasswordPayload {

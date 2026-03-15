@@ -10,6 +10,8 @@ export { default as InstagramAccountCard } from './components/InstagramAccountCa
 export { default as PostComposer } from './components/PostComposer';
 export { default as MediaLibrary } from './components/MediaLibrary';
 export { default as InstagramAutomationBuilder } from './components/automation/InstagramAutomationBuilder';
+export { default as InstagramAutomationForm } from './components/automation/InstagramAutomationForm';
+export { default as InstagramAutomationsList } from './components/automation/InstagramAutomationsList';
 export { default as InstagramInboxWorkspace } from './components/inbox/InstagramInboxWorkspace';
 
 // API

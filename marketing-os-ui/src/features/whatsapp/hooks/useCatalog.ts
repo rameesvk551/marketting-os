@@ -7,10 +7,8 @@ export function useCatalog() {
     const [commerceSettings, setCommerceSettings] = useState<{ is_cart_enabled: boolean; is_catalog_visible: boolean } | null>(null);
     const [settingsLoading, setSettingsLoading] = useState(false);
 
-    // Catalog products & categories
-    const [products, setProducts] = useState<any[]>([]);
+    // Catalog categories
     const [categories, setCategories] = useState<any[]>([]);
-    const [productsLoading, setProductsLoading] = useState(false);
 
     // Sending states
     const [sending, setSending] = useState(false);
@@ -40,18 +38,6 @@ export function useCatalog() {
             setSettingsLoading(false);
         }
     }, [fetchCommerceSettings]);
-
-    const fetchProducts = useCallback(async (filters?: any) => {
-        setProductsLoading(true);
-        try {
-            const res = await whatsappApi.getCatalogProducts(filters);
-            setProducts(res.data?.data || res.data || []);
-        } catch {
-            setProducts([]);
-        } finally {
-            setProductsLoading(false);
-        }
-    }, []);
 
     const fetchCategories = useCallback(async () => {
         try {
@@ -153,17 +139,16 @@ export function useCatalog() {
 
     useEffect(() => {
         fetchCommerceSettings();
-        fetchProducts();
         fetchCategories();
-    }, [fetchCommerceSettings, fetchProducts, fetchCategories]);
+    }, [fetchCommerceSettings, fetchCategories]);
 
     return {
         // Commerce settings
         commerceSettings, settingsLoading,
         fetchCommerceSettings, updateCommerceSettings,
-        // Products & categories
-        products, categories, productsLoading,
-        fetchProducts, fetchCategories,
+        // Categories
+        categories,
+        fetchCategories,
         // Catalog operations
         sending,
         createCatalogTemplate, sendCatalogTemplate,

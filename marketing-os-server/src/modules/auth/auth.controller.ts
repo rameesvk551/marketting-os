@@ -6,7 +6,7 @@ import { AppError } from '../../utils/apiError.js';
 import { validateRequired } from '../../utils/validateRequired.js';
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-    const { tenantName, userName, email, password } = req.body;
+    const { tenantName, userName, email, password, referralCode } = req.body;
     //GGggg
     validateRequired({ tenantName, userName, email, password });
 
@@ -15,6 +15,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
         userName,
         email,
         password,
+        referralCode,
     });
 
     ApiResponse.created(res, result, 'Registration successful');
