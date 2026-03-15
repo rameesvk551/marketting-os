@@ -1,0 +1,51 @@
+[AIEcommerce] Sending Interactive Message with sections: [
+  {
+    "title": "perfume",
+    "product_items": [
+      {
+        "product_retailer_id": "WO-60"
+      }
+    ]
+  }
+]
+[AIEcommerce] catalogId mapped: 2147022806114894
+[MetaCloudProvider] sendMessage → https://graph.facebook.com/v24.0/919556244575947/messages
+[MetaCloudProvider] Payload: {
+  "messaging_product": "whatsapp",
+  "recipient_type": "individual",
+  "to": "919605734995",
+  "type": "interactive",
+  "interactive": {
+    "type": "product_list",
+    "header": {
+      "type": "text",
+      "text": "Our Products"
+    },
+    "body": {
+      "text": "Browse our latest collection"
+    },
+    "action": {
+      "catalog_id": "2147022806114894",
+      "sections": [
+        {
+          "title": "perfume",
+          "product_items": [
+            {
+              "product_retailer_id": "WO-60"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+[MetaCloudProvider] Response (400): {
+  "error": {
+    "message": "(#131009) Parameter value is not valid",
+    "type": "OAuthException",
+    "code": 131009,
+    "error_data": {
+      "messaging_product": "whatsapp",
+      "details": "None of the products provided could be sent. Please check your catalog."
+    },
+    "fbtrace_id": "AObBLnfx8ogafWZ36wpJqDS"

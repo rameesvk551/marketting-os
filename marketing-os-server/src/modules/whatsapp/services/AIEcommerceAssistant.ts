@@ -108,11 +108,13 @@ export function createAIEcommerceAssistant(messageService: any, productService: 
                 const sections = Array.from(categoryMap.values()).map(cat => ({
                     title: cat.name,
                     product_items: cat.items.map((p: any) => ({
-                        product_retailer_id: p._id.toString()
+                        product_retailer_id: p.sku || p._id.toString()
                     }))
                 }));
 
                 try {
+                    console.log('[AIEcommerce] Sending Interactive Message with sections:', JSON.stringify(sections, null, 2));
+                    console.log('[AIEcommerce] catalogId mapped:', catalogId);
                     await ms.sendInteractive({
                         tenantId,
                         recipientPhone,
